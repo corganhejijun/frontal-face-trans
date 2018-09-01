@@ -1,0 +1,12 @@
+Pre-trained models from https://github.com/davidsandberg/facenet
+
+such as 
+
+https://drive.google.com/open?id=1EXPBSXwTaqrSC0OhUdXNmKSh9qJUQ55-
+
+
+and
+
+shape_predictor_68_face_landmarks.dat
+
+for dlib
