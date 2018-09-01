@@ -7,7 +7,7 @@ import copy
 
 import facenet  # https://github.com/davidsandberg/facenet.git
 
-def distance(image_folder, model_folder):
+def distance(image_folder, model_folder, img_size=None):
     print(image_folder)
     image_files = []
     for file in os.listdir(image_folder):
@@ -17,6 +17,8 @@ def distance(image_folder, model_folder):
     img_list = []
     for image in tmp_image_paths:
         img = misc.imread(os.path.expanduser(image), mode='RGB')
+        if img_size:
+            img = misc.imresize(img, (img_size, img_size))
         img_list.append(img)
     images = np.stack(img_list)
     with tf.Graph().as_default():

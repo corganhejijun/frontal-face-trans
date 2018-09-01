@@ -105,3 +105,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+/datasets/celeba/identity_CelebA.txt
+/datasets/lfw_distance.txt
+/.vscode/settings.json
