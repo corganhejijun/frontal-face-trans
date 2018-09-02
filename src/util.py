@@ -5,6 +5,8 @@ from scipy import misc
 import numpy as np
 import dlib
 
+from .FaceDistance import distance
+
 def getBound(img, shape):
     xMin = len(img[0])
     xMax = 0
@@ -61,3 +63,15 @@ def faceFromDir(inDir, outDir, shape_model):
                 os.mkdir(outPath)
             for index, img in enumerate(imgList):
                 misc.imsave(os.path.join(outPath, fileNameList[index]), img)
+
+def getDatasetDistance(result_path, dataset_path, model_path):
+    file = open(result_path, "w")
+    file.write("name, average, standard, count\n")
+    file.close()
+    for dirName in os.listdir(dataset_path):
+        print("calculating distance of dir %s" % dirName)
+        subDir = os.path.join(dataset_path, dirName)
+        avg, std = distance(subDir, model_path, 160)
+        file = open(result_path, "a")
+        file.write("%s, %f, %f, %d\n" % (dirName, avg, std, len(os.listdir(subDir))))
+        file.close()
