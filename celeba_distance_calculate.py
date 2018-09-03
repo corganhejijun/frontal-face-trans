@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*- 
-import os
 from src.util import getDatasetDistance
 
 DATASET = "datasets\\celeba_aligned"
