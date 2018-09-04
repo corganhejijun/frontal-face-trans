@@ -147,6 +147,8 @@ def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath, fullSize):
                     continue
                 if not os.path.exists(os.path.join(aligned_data, dirName, imgFile)):
                     continue
+                if os.path.exists(os.path.join(outDir, dirName, imgFile)):
+                    continue
                 img = transFace(detector, shapePredict, os.path.join(subDir, imgFile),
                                 controlDstPts, fullSize)
                 if np.any(img == None):
