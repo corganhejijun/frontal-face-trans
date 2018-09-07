@@ -109,3 +109,4 @@ venv.bak/
 /datasets/lfw_distance.txt
 /.vscode/settings.json
 /datasets/celeba_distance.txt
+/datasets/lfw_resize_margin.txt
