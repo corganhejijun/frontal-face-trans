@@ -31,6 +31,8 @@ def duplicateImg(img):
 
 def getTrainImg(folder, fullSize, outDir, marginFile):
     file = open(marginFile, "w")
+    if not os.path.isdir(outDir):
+        os.mkdir(outDir)
     for subFolder in os.listdir(folder):
         subFolderPath = os.path.join(folder, subFolder)
         if not os.path.isdir(subFolderPath):
@@ -38,6 +40,7 @@ def getTrainImg(folder, fullSize, outDir, marginFile):
         for imgFile in os.listdir(subFolderPath):
             if not imgFile.endswith('.jpg'):
                 continue
+            print("processing {0}".format(imgFile))
             imgPath = os.path.join(subFolderPath, imgFile)
             img = misc.imread(imgPath)
             imgX2, margin = resizeX2(img, fullSize)

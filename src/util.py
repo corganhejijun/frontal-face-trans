@@ -92,6 +92,8 @@ def transFace(detector, shapePredict, file, controlDstPts, fullSize):
             y = int(math.floor(imgMlsMap[i][j][1]) + topMargin)
             if (x < 0 or y < 0):
                 break
+            if (x >= deformedImage.shape[1] or y >= deformedImage.shape[0]):
+                break
             deformedImage[y, x] = cropImg[i, j]
     return deformedImage 
 
