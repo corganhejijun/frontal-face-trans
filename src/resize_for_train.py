@@ -4,6 +4,7 @@ from scipy import misc
 from PIL import Image
 import numpy as np
 import math
+import cv2
 
 def resizeX2(img, fullSize):
     margin = [0, 0, 0, 0] # [top, left, bottom, right]
@@ -48,3 +49,37 @@ def getTrainImg(folder, fullSize, outDir, marginFile):
             img4Train.save(os.path.join(outDir, imgFile))
             file.write("{0}:{1}\n".format(imgFile, margin))
     file.close()
+    
+def getLFWFolder(imgFile):
+    return imgFile[:imgFile.rfind("_")]
+
+def readMarginFile(marginFile, fill_folder, out_folder, dataset_folder):
+    file = open(marginFile)
+    content = file.readlines()
+    file.close()
+    fillDatas = os.listdir(fill_folder)
+    if len(content) != len(fillDatas):
+        print("margin file has {0} files and fill folder has {1} files.".format(len(content), len(fillDatas)))
+    if not os.path.isdir(out_folder):
+        os.mkdir(out_folder)
+    for imgFile in fillDatas:
+        if not imgFile.endswith(".png"):
+            continue
+        print("processing " + imgFile)
+        srcPath = os.path.join(fill_folder, imgFile)
+        subFolder = getLFWFolder(imgFile)
+        destFolder = os.path.join(out_folder, subFolder)
+        for line in content:
+            # Aaron_Peirsol_0001.jpg:[41, 35, 41, 35]
+            [name, margin] = line.split(':')
+            if name == imgFile.split('.')[0] + ".jpg":
+                margin = margin[1:margin.rfind(']')].split(',')
+                img = cv2.cvtColor(cv2.imread(srcPath), cv2.COLOR_BGR2RGB)
+                if int(margin[0]) != 0:
+                    img = img[int(margin[0]):-int(margin[2]), :, :]
+                if int(margin[1]) != 0:
+                    img = img[:, int(margin[1]):-int(margin[3]), :]
+                if not os.path.isdir(destFolder):
+                    os.mkdir(destFolder)
+                misc.imsave(os.path.join(destFolder, imgFile), img)
+                break
