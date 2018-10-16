@@ -96,6 +96,9 @@ def transFace(detector, shapePredict, file, controlDstPts, fullSize):
             if (x >= deformedImage.shape[1] or y >= deformedImage.shape[0]):
                 break
             deformedImage[y, x] = cropImg[i, j]
+            pixSum = deformedImage[y, x][0] + deformedImage[y, x][1] + deformedImage[y, x][2]
+            if pixSum < 50:
+                print("x = {0}, y = {1}, i = {2}, j = {3}, [x, y] = {4}, [i, j] = {5}".format(x, y, i, j, deformedImage[y, x], cropImg[i, j]))
     return deformedImage 
 
 
