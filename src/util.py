@@ -5,6 +5,7 @@ from scipy import misc
 import numpy as np
 import dlib
 import math
+import sys
 
 from .MovingLSQ import MovingLSQ
 from .FaceDistance import distance
@@ -174,7 +175,10 @@ def getDatasetDistance(result_path, dataset_path, model_path):
     for dirName in os.listdir(dataset_path):
         print("calculating distance of dir %s" % dirName)
         subDir = os.path.join(dataset_path, dirName)
-        avg, std = distance(subDir, model_path, 160)
-        file = open(result_path, "a")
-        file.write("%s, %f, %f, %d\n" % (dirName, avg, std, len(os.listdir(subDir))))
-        file.close()
+        try:
+            avg, std = distance(subDir, model_path, 160)
+            file = open(result_path, "a")
+            file.write("%s, %f, %f, %d\n" % (dirName, avg, std, len(os.listdir(subDir))))
+            file.close()
+        except:
+            print(sys.exc_info()[0])
