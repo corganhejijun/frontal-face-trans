@@ -6,10 +6,10 @@ from src.face_landmark import getFaceDis, getStandardFace
 from src.util import getFace, getBound, transFaceImg
 from src.resize_for_train import resizeX2, combineImg
 
-FRONT_FACE_STANDARD = "datasets\\eigen_face.jpg"
-SHAPE_MODEL = "models\\shape_predictor_68_face_landmarks.dat"
-DATASET_DIR = "datasets\\celeba_train"
-DEST_DIR = "datasets\\celeba_train_ab"
+FRONT_FACE_STANDARD = "datasets/eigen_face.jpg"
+SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
+DATASET_DIR = "datasets/celeba_train"
+DEST_DIR = "datasets/celeba_train_ab"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()

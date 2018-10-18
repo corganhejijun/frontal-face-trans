@@ -7,15 +7,15 @@ import numpy as np
 from shutil import copyfile
 from src.face_landmark import getFaceDis, getStandardFace
 
-CELEBA_IDENTITY_FILE = "datasets\\celeba\\identity_CelebA.txt"
-CELEBA_DATASET = "datasets\\celeba\\img_align_celeba"
-MIDDLE_DIR = "datasets\\celeba\\celeba_identified"
+CELEBA_IDENTITY_FILE = "datasets/celeba/identity_CelebA.txt"
+CELEBA_DATASET = "datasets/celeba/img_align_celeba"
+MIDDLE_DIR = "datasets/celeba/celeba_identified"
 
 copy_celeba(CELEBA_IDENTITY_FILE, CELEBA_DATASET, MIDDLE_DIR)
 
-FRONT_FACE_STANDARD = "datasets\\eigen_face.jpg"
-SHAPE_MODEL = "models\\shape_predictor_68_face_landmarks.dat"
-DEST_DIR = "datasets\\celeba_train"
+FRONT_FACE_STANDARD = "datasets/eigen_face.jpg"
+SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
+DEST_DIR = "datasets/celeba_train"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
