@@ -29,6 +29,12 @@ def duplicateImg(img):
     target.paste(Image.fromarray(np.uint8(img)), (0, 0))
     target.paste(Image.fromarray(np.uint8(img)), (img.shape[0] + 1, 0))
     return target
+    
+def combineImg(imga, imgb):
+    target = Image.new('RGB', (imga.shape[0]*2, imga.shape[1]))
+    target.paste(Image.fromarray(np.uint8(imga)), (0, 0))
+    target.paste(Image.fromarray(np.uint8(imgb)), (imgb.shape[0] + 1, 0))
+    return target
 
 def getTrainImg(folder, fullSize, outDir, marginFile):
     file = open(marginFile, "w")

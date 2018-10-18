@@ -40,8 +40,7 @@ def getFace(detector, shapePredict, file):
         return None
     return img[ymin:ymax,xmin:xmax,:]
 
-def transFace(detector, shapePredict, file, controlDstPts, fullSize):
-    img = cv2.cvtColor(cv2.imread(file), cv2.COLOR_BGR2RGB)
+def transFaceImg(detector, shapePredict, img, controlDstPts, file):
     dets = detector(img, 1)
     if (len(dets) == 0):
         print("file %s has no face" % file)
@@ -96,11 +95,11 @@ def transFace(detector, shapePredict, file, controlDstPts, fullSize):
             if (x >= deformedImage.shape[1] or y >= deformedImage.shape[0]):
                 break
             deformedImage[y, x] = cropImg[i, j]
-            pixSum = deformedImage[y, x][0] + deformedImage[y, x][1] + deformedImage[y, x][2]
-            if pixSum < 50:
-                print("x = {0}, y = {1}, i = {2}, j = {3}, [x, y] = {4}, [i, j] = {5}".format(x, y, i, j, deformedImage[y, x], cropImg[i, j]))
     return deformedImage 
 
+def transFace(detector, shapePredict, fileName, controlDstPts):
+    img = cv2.cvtColor(cv2.imread(fileName), cv2.COLOR_BGR2RGB)
+    return transFaceImg(detector, shapePredict, img, controlDstPts, fileName)
 
 def faceFromDir(inDir, outDir, shape_model):
     shapePredict = dlib.shape_predictor(shape_model)
@@ -129,7 +128,7 @@ def faceFromDir(inDir, outDir, shape_model):
             for index, img in enumerate(imgList):
                 misc.imsave(os.path.join(outPath, fileNameList[index]), img)
 
-def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath, fullSize):
+def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath):
     standardImg = cv2.cvtColor(cv2.imread(eigenPath), cv2.COLOR_BGR2RGB)
     detector = dlib.get_frontal_face_detector()
     shapePredict = dlib.shape_predictor(shape_model)
@@ -156,7 +155,7 @@ def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath, fullSize):
                 if os.path.exists(os.path.join(outDir, dirName, imgFile)):
                     continue
                 img = transFace(detector, shapePredict, os.path.join(subDir, imgFile),
-                                controlDstPts, fullSize)
+                                controlDstPts)
                 if np.any(img == None):
                     if os.path.exists(os.path.join(aligned_data, dirName, imgFile)):
                         print(imgFile + " exists but not processed")
@@ -165,7 +164,7 @@ def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath, fullSize):
                 fileNameList.append(imgFile)
             if len(imgList) < 2:
                 continue
-            outPath = os.path.join(outDir, dirName);
+            outPath = os.path.join(outDir, dirName)
             if not os.path.exists(outPath):
                 os.mkdir(outPath)
             for index, img in enumerate(imgList):

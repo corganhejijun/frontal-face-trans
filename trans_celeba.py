@@ -7,6 +7,5 @@ OUT_DIR = "datasets\\celeba_trans"
 SHAPE_MODEL = "models\\shape_predictor_68_face_landmarks.dat"
 
 EIGEN_PATH = "datasets\\eigen_face.jpg"
-OUT_SIZE = 256
 
-transFromDir(DATASET, ALIGNED_DATA, OUT_DIR, SHAPE_MODEL, EIGEN_PATH, OUT_SIZE)
+transFromDir(DATASET, ALIGNED_DATA, OUT_DIR, SHAPE_MODEL, EIGEN_PATH)
