@@ -58,4 +58,4 @@ for subFolder in os.listdir(DATASET_DIR):
             other, otherMargin = resizeX2(trans, IMAGE_SIZE)
             result = combineImg(front, other)
             number += 1
-            result.save(os.path.join(DEST_DIR, str(number) + ext))
+            result.save(os.path.join(DEST_DIR, str(number).zfill(6) + ext))
