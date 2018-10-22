@@ -53,12 +53,12 @@ for subFolder in folderList:
             otherList.append(face)
     print("subFolder {0} has {1} front faces".format(subFolder, len(frontList)))
     for frontFace in frontList:
-        frontXmin, _, frontYmin, _ = getBound(frontFace.img, frontFace.shape)
+        xmin, xmax, ymin, ymax = getBound(frontFace.img, frontFace.shape)
         ctrlDstPts = np.zeros((frontFace.shape.num_parts,2))
-        front, frontMargin = resizeX2(frontFace.img, IMAGE_SIZE)
+        front, frontMargin = resizeX2(frontFace.img[ymin:ymax,xmin:xmax,:], IMAGE_SIZE)
         for i in range(frontFace.shape.num_parts):
-            ctrlDstPts[i] = [frontFace.shape.part(i).x - frontXmin, 
-                                frontFace.shape.part(i).y - frontYmin]
+            ctrlDstPts[i] = [frontFace.shape.part(i).x - xmin, 
+                                frontFace.shape.part(i).y - ymin]
         for face in otherList:
             trans = transFaceImg(face.detect, face.shape, face.img, ctrlDstPts, face.fileName)
             if np.any(trans == None):
