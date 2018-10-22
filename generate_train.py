@@ -55,7 +55,7 @@ for subFolder in folderList:
     for frontFace in frontList:
         frontXmin, _, frontYmin, _ = getBound(frontFace.img, frontFace.shape)
         ctrlDstPts = np.zeros((frontFace.shape.num_parts,2))
-        front, frontMargin = resizeX2(frontFace, IMAGE_SIZE)
+        front, frontMargin = resizeX2(frontFace.img, IMAGE_SIZE)
         for i in range(frontFace.shape.num_parts):
             ctrlDstPts[i] = [frontFace.shape.part(i).x - frontXmin, 
                                 frontFace.shape.part(i).y - frontYmin]
