@@ -3,7 +3,8 @@
 from src.file_oper import copy_celeba
 import dlib
 import os
-import numpy as np
+import numpy as np 
+import cv2
 from shutil import copyfile
 from src.face_landmark import getFaceDis, getStandardFace
 
@@ -26,7 +27,10 @@ ext = '.jpg'
 standardLandmarks = getStandardFace(FRONT_FACE_STANDARD, detector, shapePredict)
 if (not os.path.exists(DEST_DIR)):
     os.mkdir(DEST_DIR)
-for subFolder in os.listdir(folder): 
+counter = 0
+folderList = os.listdir(folder)
+for subFolder in folderList:
+    counter += 1
     fileList = os.listdir(os.path.join(folder, subFolder))
     if len(fileList) < 2:
         print("{0} has less than 2 files".format(subFolder))
@@ -39,7 +43,8 @@ for subFolder in os.listdir(folder):
         destFilePath = os.path.join(DEST_DIR, subFolder, fileName)
         if os.path.exists(destFilePath):
             continue
-        landmarks = getFaceDis(srcFilePath, detector, shapePredict)
+        img = cv2.cvtColor(cv2.imread(srcFilePath), cv2.COLOR_BGR2RGB)
+        landmarks, _, _ = getFaceDis(img, detector, shapePredict, fileName)
         if landmarks is None:
             continue
         diff = np.linalg.norm(landmarks - standardLandmarks)
@@ -50,12 +55,13 @@ for subFolder in os.listdir(folder):
             frontalFile = fileName
             print("{0} folder has frontal file {1}".format(subFolder, fileName))
             break
+    percent = counter / len(folderList) * 100
     if len(frontalFile) == 0:
-        print("{0} folder don't have frontal file".format(subFolder))
+        print("%s folder don't have frontal file, %.2f%% complete" % (subFolder, percent))
         continue
     for fileName in fileList:
         if frontalFile != fileName:
             srcFilePath = os.path.join(folder, subFolder, fileName)
             destFilePath = os.path.join(DEST_DIR, subFolder, fileName)
             copyfile(srcFilePath, destFilePath)
-    print("{0} folder copyed".format(subFolder))
+    print("%s folder copyed, %.2f%% complete" % (subFolder, percent))

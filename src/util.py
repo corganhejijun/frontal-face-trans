@@ -40,13 +40,7 @@ def getFace(detector, shapePredict, file):
         return None
     return img[ymin:ymax,xmin:xmax,:]
 
-def transFaceImg(detector, shapePredict, img, controlDstPts, file):
-    dets = detector(img, 1)
-    if (len(dets) == 0):
-        print("file %s has no face" % file)
-        return None
-    det = dets[0]
-    shape = shapePredict(img, det)
+def transFaceImg(det, shape, img, controlDstPts, file):
     xmin, xmax, ymin, ymax = getBound(img, shape)
     if xmin < 0 or xmax < 0 or ymin < 0 or ymax < 0:
         print("file %s can't get bound" % file)
@@ -99,7 +93,13 @@ def transFaceImg(detector, shapePredict, img, controlDstPts, file):
 
 def transFace(detector, shapePredict, fileName, controlDstPts):
     img = cv2.cvtColor(cv2.imread(fileName), cv2.COLOR_BGR2RGB)
-    return transFaceImg(detector, shapePredict, img, controlDstPts, fileName)
+    dets = detector(img, 1)
+    if (len(dets) == 0):
+        print("file %s has no face" % file)
+        return None
+    det = dets[0]
+    shape = shapePredict(img, det)
+    return transFaceImg(det, shape, img, controlDstPts, fileName)
 
 def faceFromDir(inDir, outDir, shape_model):
     shapePredict = dlib.shape_predictor(shape_model)
