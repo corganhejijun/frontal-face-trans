@@ -24,6 +24,21 @@ def resizeX2(img, fullSize):
     margin[3] = margin[1] = left
     return fullsizeImg, margin
 
+def resizeMargin(img, fullSize):
+    margin = [0, 0, 0, 0]
+    imgCp = np.copy(img)
+    if img.shape[0] > fullSize:
+        imgCp = imgCp[:fullSize,:,:]
+    if img.shape[1] > fullSize:
+        imgCp = imgCp[:,:fullSize,:]
+    fullsizeImg = np.zeros((fullSize, fullSize, 3))
+    left = int((fullSize - imgCp.shape[1])/2)
+    top = int((fullSize - imgCp.shape[0])/2)
+    fullsizeImg[top:imgCp.shape[0]+top, left:imgCp.shape[1]+left, :] = imgCp
+    margin[2] = margin[0] = top
+    margin[3] = margin[1] = left
+    return fullsizeImg, margin
+
 def duplicateImg(img):
     target = Image.new('RGB', (img.shape[0]*2, img.shape[1]))
     target.paste(Image.fromarray(np.uint8(img)), (0, 0))
