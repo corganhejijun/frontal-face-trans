@@ -65,7 +65,7 @@ def getTrainImg(folder, fullSize, outDir, marginFile):
             print("processing {0}".format(imgFile))
             imgPath = os.path.join(subFolderPath, imgFile)
             img = misc.imread(imgPath)
-            imgX2, margin = resizeX2(img, fullSize)
+            imgX2, margin = resizeMargin(img, fullSize)
             img4Train = duplicateImg(imgX2)
             img4Train.save(os.path.join(outDir, imgFile))
             file.write("{0}:{1}\n".format(imgFile, margin))
