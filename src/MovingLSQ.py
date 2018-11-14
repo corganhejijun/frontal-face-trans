@@ -78,7 +78,7 @@ class MovingLSQ:
         upper_bound = np.zeros(npoints) + np.pi
         #print Error_2D_Rigid(x0, self._src, self._dst, weight, p_star, q_star, buf, buf_map)
         #exit()
-        result = least_squares(Error_Rigid, x0, jac_sparsity = jacobian, verbose=0, #bounds=(lower_bound, upper_bound),
+        result = least_squares(Error_Rigid, x0, verbose=1, jac_sparsity = jacobian, bounds=(lower_bound, upper_bound),
                 args=(self._src, self._dst, weight, p_star, q_star, buf, buf_map))
         x_cos = np.cos(result['x'])
         x_sin = np.sin(result['x'])
