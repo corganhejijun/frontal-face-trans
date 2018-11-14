@@ -17,3 +17,4 @@ steps for operation
 # evaluate distance of CelebA testing data
 1. python3 celeba_distance_calculate.py
 # evaluate distance of lfw data
+1. python3 lfw_distance_calculate.py

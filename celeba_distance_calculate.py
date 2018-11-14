@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- 
-from src.util import getDatasetDistance
+from src.FaceDistance import getDatasetDistance
 
 DATASET = "datasets/celeba_aligned"
 MODEL_DIR = "models/20180402-114759"
