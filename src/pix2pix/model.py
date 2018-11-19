@@ -408,9 +408,9 @@ class pix2pix(object):
             endIdx = max_size * (batch_count + 1)
             if (len(sample_files_all) < endIdx):
                 endIdx = len(sample_files_all)
-            sample_files = sample_files_all[(batch_count - 1) * max_size : endIdx]
+            sample_files = sample_files_all[batch_count * max_size : endIdx]
             # load testing input
-            print("Loading testing images ... from {0} to {1} of total {2}".format((batch_count - 1) * max_size, endIdx, len(sample_files_all)))
+            print("Loading testing images ... from {0} to {1} of total {2}".format(batch_count * max_size, endIdx, len(sample_files_all)))
             batch_count += 1
             sample = [load_data(sample_file, is_test=True) for sample_file in sample_files]
 
