@@ -10,8 +10,8 @@ from ops import *
 from utils import *
 
 class pix2pix(object):
-    def __init__(self, sess, image_size=256,
-                 batch_size=1, sample_size=1, output_size=256,
+    def __init__(self, sess, image_size=128,
+                 batch_size=1, sample_size=1, output_size=128,
                  gf_dim=64, df_dim=64, L1_lambda=100,
                  input_c_dim=3, output_c_dim=3, dataset_name='facades',
                  checkpoint_dir=None, sample_dir=None):

@@ -35,7 +35,7 @@ counter = 0
 folderList = os.listdir(DATASET_DIR)
 for subFolder in folderList:
     counter += 1
-    print("processing subFolder %s, %.2f%% complete" % (subFolder, (counter / len(folderList) * 100)))
+    print("processing subFolder %s, current %d of %d complete" % (subFolder, counter, len(folderList)))
     frontList = []
     otherList = []
     for fileName in os.listdir(os.path.join(DATASET_DIR, subFolder)):

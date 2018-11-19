@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*- 
-import os
-from src.util import getDatasetDistance
+from src.FaceDistance import getDatasetDistance
 
 LFW_DATASET = "datasets/lfw_aligned"
 MODEL_DIR = "models/20180402-114759"

@@ -175,21 +175,3 @@ def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath):
                 os.mkdir(outPath)
             for index, img in enumerate(imgList):
                 misc.imsave(os.path.join(outPath, fileNameList[index]), img)
-
-def getDatasetDistance(result_path, dataset_path, model_path):
-    file = open(result_path, "w")
-    file.write("name, average, standard, count\n")
-    file.close()
-    dirList = os.listdir(dataset_path)
-    count = 0
-    for dirName in dirList:
-        count += 1
-        print("calculating distance of dir %s, count %d of %d" % (dirName, count, len(dirList)))
-        subDir = os.path.join(dataset_path, dirName)
-        try:
-            avg, std = distance(subDir, model_path, 160)
-            file = open(result_path, "a")
-            file.write("%s, %f, %f, %d\n" % (dirName, avg, std, len(os.listdir(subDir))))
-            file.close()
-        except:
-            print(sys.exc_info()[0])
