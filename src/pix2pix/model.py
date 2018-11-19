@@ -1,7 +1,7 @@
 from __future__ import division
 import os
 import time
-from glob import glob
+from glob import glo
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
@@ -396,40 +396,48 @@ class pix2pix(object):
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
 
-        sample_files = glob('./datasets/{}/val_test/*.jpg'.format(self.dataset_name))
+        sample_files_all = glob('./datasets/{}/val_test/*.jpg'.format(self.dataset_name))
 
         # sort testing input
         # n = [int(i) for i in map(lambda x: x.split('/')[-1].split('.jpg')[0], sample_files)]
         # sample_files = [x for (y, x) in sorted(zip(n, sample_files))]
 
-        # load testing input
-        print("Loading testing images ...")
-        sample = [load_data(sample_file, is_test=True) for sample_file in sample_files]
+        max_size = 10000
+        batch_count = 0
+        while len(sample_files_all) > max_size * batch_count:
+            endIdx = max_size * (batch_count + 1)
+            if (len(sample_files_all) < endIdx):
+                endIdx = len(sample_files_all)
+            sample_files = sample_files_all[(batch_count - 1) * max_size : endIdx]
+            # load testing input
+            print("Loading testing images ... from {0} to {1} of total {2}".format((batch_count - 1) * max_size, endIdx, len(sample_files_all)))
+            batch_count += 1
+            sample = [load_data(sample_file, is_test=True) for sample_file in sample_files]
 
-        if (self.is_grayscale):
-            sample_images = np.array(sample).astype(np.float32)[:, :, :, None]
-        else:
-            sample_images = np.array(sample).astype(np.float32)
+            if (self.is_grayscale):
+                sample_images = np.array(sample).astype(np.float32)[:, :, :, None]
+            else:
+                sample_images = np.array(sample).astype(np.float32)
 
-        sample_images = [sample_images[i:i+self.batch_size]
-                         for i in xrange(0, len(sample_images), self.batch_size)]
-        sample_images = np.array(sample_images)
-        print(sample_images.shape)
+            sample_images = [sample_images[i:i+self.batch_size]
+                            for i in xrange(0, len(sample_images), self.batch_size)]
+            sample_images = np.array(sample_images)
+            print(sample_images.shape)
 
-        start_time = time.time()
-        if self.load(self.checkpoint_dir):
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
-        print("file number: {}".format(len(sample_files)))
+            start_time = time.time()
+            if self.load(self.checkpoint_dir):
+                print(" [*] Load SUCCESS")
+            else:
+                print(" [!] Load failed...")
+            print("file number: {}".format(len(sample_files)))
 
-        for i, sample_image in enumerate(sample_images):
-            idx = i
-            fileName = sample_files[idx].split('/')[-1].split('.jpg')[0]
-            print("sampling image {}, {} of total {}".format(fileName, idx, len(sample_files)))
-            samples = self.sess.run(
-                self.fake_B_sample,
-                feed_dict={self.real_data: sample_image}
-            )
-            save_images(samples, [self.batch_size, 1],
-                        './{}/{}.png'.format(args.test_dir, fileName))
+            for i, sample_image in enumerate(sample_images):
+                idx = i
+                fileName = sample_files[idx].split('/')[-1].split('.jpg')[0]
+                print("sampling image {}, {} of total {}".format(fileName, idx, len(sample_files)))
+                samples = self.sess.run(
+                    self.fake_B_sample,
+                    feed_dict={self.real_data: sample_image}
+                )
+                save_images(samples, [self.batch_size, 1],
+                            './{}/{}.png'.format(args.test_dir, fileName))
