@@ -106,8 +106,11 @@ def faceFromDir(inDir, outDir, shape_model):
     detector = dlib.get_frontal_face_detector()
     if not os.path.exists(outDir):
         os.mkdir(outDir)
-    for dirName in os.listdir(inDir):
-        print("processing %s" % dirName)
+    dirList = os.listdir(inDir)
+    count = 0
+    for dirName in dirList:
+        count += 1
+        print("processing %s, count %d of %d" % (dirName, count, len(dirList)))
         subDir = os.path.join(inDir, dirName)
         if os.path.isdir(subDir):
             imgList = []
@@ -141,8 +144,11 @@ def transFromDir(inDir, aligned_data, outDir, shape_model, eigenPath):
 
     if not os.path.exists(outDir):
         os.mkdir(outDir)
-    for dirName in os.listdir(inDir):
-        print("processing %s" % dirName)
+    dirList = os.listdir(inDir)
+    count = 0
+    for dirName in dirList:
+        count += 1
+        print("processing %s, count %d of %d" % (dirName, count, len(dirList)))
         subDir = os.path.join(inDir, dirName)
         if os.path.isdir(subDir):
             imgList = []
@@ -174,8 +180,11 @@ def getDatasetDistance(result_path, dataset_path, model_path):
     file = open(result_path, "w")
     file.write("name, average, standard, count\n")
     file.close()
-    for dirName in os.listdir(dataset_path):
-        print("calculating distance of dir %s" % dirName)
+    dirList = os.listdir(dataset_path)
+    count = 0
+    for dirName in dirList:
+        count += 1
+        print("calculating distance of dir %s, count %d of %d" % (dirName, count, len(dirList)))
         subDir = os.path.join(dataset_path, dirName)
         try:
             avg, std = distance(subDir, model_path, 160)
