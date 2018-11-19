@@ -59,7 +59,7 @@ def getTrainImg(folder, fullSize, outDir, marginFile):
     count = 0
     for subFolder in subFolderList:
         count += 1
-        print("processing {0}, count {1} of {2}".format((subFolder, count, len(subFolderList))))
+        print("processing {0}, count {1} of {2}".format(subFolder, count, len(subFolderList)))
         subFolderPath = os.path.join(folder, subFolder)
         if not os.path.isdir(subFolderPath):
             continue
