@@ -409,7 +409,7 @@ class pix2pix(object):
             s = self.output_size
             s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
 
-            print("##############image shape is {1}".format(image.get_shape()))
+            print("##############image shape is {0}".format(image.get_shape()))
             # image is (128 x 128 x input_c_dim)
             e1 = conv2d(image, self.gf_dim, name='g_e1_conv')
             # e1 is (64 x 64 x self.gf_dim)
