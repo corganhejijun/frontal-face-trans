@@ -305,7 +305,7 @@ class pix2pix(object):
 
             h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
             # h0 is (32 x 32 x self.df_dim)
-            h1 = lrelu(self.d_bn3(conv2d(h1, self.df_dim*2, d_h=1, d_w=1, name='d_h1_conv')))
+            h1 = lrelu(self.d_bn3(conv2d(h0, self.df_dim*2, d_h=1, d_w=1, name='d_h1_conv')))
             # h3 is (16 x 16 x self.df_dim*8)
             h2 = linear(tf.reshape(h1, [self.batch_size, -1]), 1, 'd_h1_lin')
 
