@@ -482,7 +482,7 @@ class pix2pix(object):
             s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
 
             # image is (128 x 128 x input_c_dim)
-            e1 = conv2d(image, self.gf_dim, name='g_e1_conv')
+            e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
             # e1 is (64 x 64 x self.gf_dim)
             e2 = self.g_bn_e2_64(conv2d(lrelu(e1), self.gf_dim*2, name='g_e2_conv_64'))
             # e2 is (32 x 32 x self.gf_dim*2)
