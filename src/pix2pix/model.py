@@ -345,9 +345,9 @@ class pix2pix(object):
             return tf.nn.sigmoid(h4), h4
 
     def residual_block(self, image, sur_name):
-        rb1 = self.batch_norm(conv2d(image, self.gf_dim * 4, name='g_rb1_conv' + sur_name), name='g_bn_rg_1' + sur_name)
+        rb1 = batch_norm(conv2d(image, self.gf_dim * 4, name='g_rb1_conv' + sur_name), name='g_bn_rg_1' + sur_name)
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.batch_norm(conv2d(rb1, self.gf_dim * 4, name='g_rb2_conv' + sur_name), name='g_bn_rg_2' + sur_name)
+        rb2 = batch_norm(conv2d(rb1, self.gf_dim * 4, name='g_rb2_conv' + sur_name), name='g_bn_rg_2' + sur_name)
         rb_sum = tf.add(image, rb2, name='g_rb_add' + sur_name)
         return tf.nn.relu(rb_sum)
 
