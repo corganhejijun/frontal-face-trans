@@ -8,7 +8,7 @@ import tensorflow as tf
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--dataset_name', dest='dataset_name', default='celeb_train', help='name of the dataset')
-parser.add_argument('--epoch', dest='epoch', type=int, default=200, help='# of epoch')
+parser.add_argument('--epoch', dest='epoch', type=int, default=100, help='# of epoch')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=1, help='# images in batch')
 parser.add_argument('--train_size', dest='train_size', type=int, default=1e8, help='# images used to train')
 parser.add_argument('--load_size', dest='load_size', type=int, default=286, help='scale images to this size')

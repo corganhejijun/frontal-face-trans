@@ -74,60 +74,94 @@ class pix2pix(object):
                                         name='real_A_and_B_images')
 
         self.real_B = self.real_data[:, :, :, :self.input_c_dim]
+        self.real_B_128 = tf.image.resize_images(self.real_B, (self.image_size / 2, self.image_size / 2))
+        self.real_B_64 = tf.image.resize_images(self.real_B, (self.image_size / 4, self.image_size / 4))
         self.real_A = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
         self.real_A_128 = tf.image.resize_images(self.real_A, (self.image_size / 2, self.image_size / 2))
         self.real_A_64 = tf.image.resize_images(self.real_A, (self.image_size / 4, self.image_size / 4))
 
         self.fake_B_64 = self.generator_128_to_64(self.real_A)
         self.fake_B_128 = self.generator_64_to_128(self.fake_B_64)
-        self.fake_B = self.generator_128_to_256(self.fake_B_128)
+        self.fake_B_256 = self.generator_128_to_256(self.fake_B_128)
 
         self.real_AB = tf.concat([self.real_A, self.real_B], 3)
-        self.fake_AB = tf.concat([self.real_A, self.fake_B], 3)
-        self.fake_AB_128 = tf.concat([self.real_A_128, self.fake_B_128])
         self.fake_AB_64 = tf.concat([self.real_A_64, self.fake_B_64])
+        self.fake_AB_128 = tf.concat([self.real_A_128, self.fake_B_128])
+        self.fake_AB_256 = tf.concat([self.real_A, self.fake_B_256], 3)
         self.D, self.D_logits = self.discriminator_256(self.real_AB, reuse=False)
-        self.D_, self.D_logits_ = self.discriminator_256(self.fake_AB, reuse=True)
-        self.D_128, self.D_logits_128 = self.discriminator_128(self.fake_AB_128, reuse=True)
         self.D_64, self.D_logits_64 = self.discriminator_64(self.fake_AB_64, reuse=True)
+        self.D_128, self.D_logits_128 = self.discriminator_128(self.fake_AB_128, reuse=True)
+        self.D_256, self.D_logits_256 = self.discriminator_256(self.fake_AB_256, reuse=True)
 
         self.fake_B_sample = self.sampler(self.real_A)
 
         self.d_sum = tf.summary.histogram("d", self.D)
-        self.d__sum = tf.summary.histogram("d_", self.D_)
-        self.fake_B_sum = tf.summary.image("fake_B", self.fake_B)
+        self.d_64_sum = tf.summary.histogram("d_64", self.D_64)
+        self.d_128_sum = tf.summary.histogram("d_128", self.D_128)
+        self.d_256_sum = tf.summary.histogram("d_256", self.D_256)
+        self.fake_B_64_sum = tf.summary.image("fake_B_64", self.fake_B_64)
+        self.fake_B_128_sum = tf.summary.image("fake_B_128", self.fake_B_128)
+        self.fake_B_256_sum = tf.summary.image("fake_B_256", self.fake_B_256)
 
         self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits, 
                                                                                     labels=tf.ones_like(self.D)))
-        self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_, 
-                                                                                    labels=tf.zeros_like(self.D_)))
-        self.d_loss_fake_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, 
-                                                                                        labels=tf.zeros_like(self.D_128)))
         self.d_loss_fake_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, 
                                                                                         labels=tf.zeros_like(self.D_64)))
-        self.mask = tf.greater(tf.abs(self.real_B - self.fake_B), 0) # only calculate the mean of different part
-        self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_, labels=tf.ones_like(self.D_))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B - self.fake_B))\
-                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B) - tf.reduce_mean(tf.abs(self.real_B - self.fake_B)))
-        self.g_loss_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, labels=tf.ones_like(self.D_128))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B - self.fake_B))\
-                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B) - tf.reduce_mean(tf.abs(self.real_B - self.fake_B)))
+        self.d_loss_fake_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, 
+                                                                                        labels=tf.zeros_like(self.D_128)))
+        self.d_loss_fake_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_256, 
+                                                                                    labels=tf.zeros_like(self.D_256)))
+        self.mask = tf.greater(tf.abs(self.real_B - self.fake_B_256), 0) # only calculate the mean of different part
         self.g_loss_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.ones_like(self.D_64))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B - self.fake_B))\
-                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B) - tf.reduce_mean(tf.abs(self.real_B - self.fake_B)))
+                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))\
+                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B_64) - tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64)))
+        self.g_loss_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, labels=tf.ones_like(self.D_128))) \
+                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))\
+                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B_128) - tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128)))
+        self.g_loss_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_256, labels=tf.ones_like(self.D_256))) \
+                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B - self.fake_B_256))\
+                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B) - tf.reduce_mean(tf.abs(self.real_B - self.fake_B_256)))
 
         self.d_loss_real_sum = tf.summary.scalar("d_loss_real", self.d_loss_real)
-        self.d_loss_fake_sum = tf.summary.scalar("d_loss_fake", self.d_loss_fake)
+        self.d_loss_fake_64_sum = tf.summary.scalar("d_loss_fake_64", self.d_loss_fake_64)
+        self.d_loss_fake_128_sum = tf.summary.scalar("d_loss_fake_128", self.d_loss_fake_128)
+        self.d_loss_fake_256_sum = tf.summary.scalar("d_loss_fake_256", self.d_loss_fake_256)
 
-        self.d_loss = self.d_loss_real + self.d_loss_fake
+        self.d_loss_64 = self.d_loss_real + self.d_loss_fake_64
+        self.d_loss_128 = self.d_loss_real + self.d_loss_fake_128
+        self.d_loss_256 = self.d_loss_real + self.d_loss_fake_256
 
-        self.g_loss_sum = tf.summary.scalar("g_loss", self.g_loss)
-        self.d_loss_sum = tf.summary.scalar("d_loss", self.d_loss)
+        self.g_loss_64_sum = tf.summary.scalar("g_loss_64", self.g_loss_64)
+        self.g_loss_128_sum = tf.summary.scalar("g_loss_128", self.g_loss_128)
+        self.g_loss_sum_256 = tf.summary.scalar("g_loss_256", self.g_loss_256)
+        self.d_loss_64_sum = tf.summary.scalar("d_loss_64", self.d_loss_64)
+        self.d_loss_128_sum = tf.summary.scalar("d_loss_128", self.d_loss_128)
+        self.d_loss_256_sum = tf.summary.scalar("d_loss_256", self.d_loss_256)
 
         t_vars = tf.trainable_variables()
 
-        self.d_vars = [var for var in t_vars if 'd_' in var.name]
-        self.g_vars = [var for var in t_vars if 'g_' in var.name]
+        self.d_vars_64 = []
+        self.d_vars_128 = []
+        self.d_vars_256 = []
+        for var in t_vars:
+            if 'd_' in var.name:
+                if '64' in var.name:
+                    self.d_vars_64.append(var)
+                if '128' in var.name:
+                    self.d_vars_128.append(var)
+                else:
+                    self.d_vars_256.append(var)
+        self.g_vars_64 = []
+        self.g_vars_128 = []
+        self.g_vars_256 = []
+        for var in t_vars:
+            if 'g_' in var.name:
+                if '64' in var.name:
+                    self.g_vars_64.append(var)
+                if '128' in var.name:
+                    self.g_vars_128.append(var)
+                else:
+                    self.g_vars_256.append(var)
 
         self.saver = tf.train.Saver()
 
@@ -154,17 +188,31 @@ class pix2pix(object):
 
     def train(self, args):
         """Train pix2pix"""
-        d_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.d_loss, var_list=self.d_vars)
-        g_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.g_loss, var_list=self.g_vars)
+        d_optim_64 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                          .minimize(self.d_loss_64, var_list=self.d_vars_64)
+        g_optim_64 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                          .minimize(self.g_loss_64, var_list=self.g_vars_64)
+        d_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                          .minimize(self.d_loss_128, var_list=self.d_vars_128)
+        g_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                          .minimize(self.g_loss_128, var_list=self.g_vars_128)
+        d_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                          .minimize(self.d_loss_256, var_list=self.d_vars_256)
+        g_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                          .minimize(self.g_loss_256, var_list=self.g_vars_256)
 
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
 
-        self.g_sum = tf.summary.merge([self.d__sum,
-            self.fake_B_sum, self.d_loss_fake_sum, self.g_loss_sum])
-        self.d_sum = tf.summary.merge([self.d_sum, self.d_loss_real_sum, self.d_loss_sum])
+        self.g_sum_64 = tf.summary.merge([self.d_64_sum,
+            self.fake_B_64_sum, self.d_loss_fake_64_sum, self.g_loss_64_sum])
+        self.d_sum_64 = tf.summary.merge([self.d_sum, self.d_loss_real_sum, self.d_loss_64_sum])
+        self.g_sum_128 = tf.summary.merge([self.d_128_sum,
+            self.fake_B_128_sum, self.d_loss_fake_128_sum, self.g_loss_128_sum])
+        self.d_sum_128 = tf.summary.merge([self.d_sum, self.d_loss_real_sum, self.d_loss_128_sum])
+        self.g_sum_256 = tf.summary.merge([self.d_256_sum,
+            self.fake_B_256_sum, self.d_loss_fake_256_sum, self.g_loss_256_sum])
+        self.d_sum_256 = tf.summary.merge([self.d_sum, self.d_loss_real_sum, self.d_loss_256_sum])
         self.writer = tf.summary.FileWriter("./logs", self.sess.graph)
 
         counter = 1
@@ -189,28 +237,47 @@ class pix2pix(object):
                     batch_images = np.array(batch).astype(np.float32)
 
                 # Update D network
-                _, summary_str = self.sess.run([d_optim, self.d_sum],
+                _, summary_str = self.sess.run([d_optim_64, self.d_sum_64],
                                                feed_dict={ self.real_data: batch_images })
                 self.writer.add_summary(summary_str, counter)
 
                 # Update G network
-                _, summary_str = self.sess.run([g_optim, self.g_sum],
+                _, summary_str = self.sess.run([g_optim_64, self.g_sum_64],
                                                feed_dict={ self.real_data: batch_images })
                 self.writer.add_summary(summary_str, counter)
 
-                # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                _, summary_str = self.sess.run([g_optim, self.g_sum],
+                # Update D network
+                _, summary_str = self.sess.run([d_optim_128, self.d_sum_128],
                                                feed_dict={ self.real_data: batch_images })
                 self.writer.add_summary(summary_str, counter)
 
-                errD_fake = self.d_loss_fake.eval({self.real_data: batch_images})
+                # Update G network
+                _, summary_str = self.sess.run([g_optim_128, self.g_sum_128],
+                                               feed_dict={ self.real_data: batch_images })
+
+                # Update D network
+                _, summary_str = self.sess.run([d_optim_256, self.d_sum_256],
+                                               feed_dict={ self.real_data: batch_images })
+                self.writer.add_summary(summary_str, counter)
+
+                # Update G network
+                _, summary_str = self.sess.run([g_optim_256, self.g_sum_256],
+                                               feed_dict={ self.real_data: batch_images })
+
+                errD_fake_64 = self.d_loss_fake_64.eval({self.real_data: batch_images})
+                errD_fake_128 = self.d_loss_fake_128.eval({self.real_data: batch_images})
+                errD_fake_256 = self.d_loss_fake_256.eval({self.real_data: batch_images})
                 errD_real = self.d_loss_real.eval({self.real_data: batch_images})
-                errG = self.g_loss.eval({self.real_data: batch_images})
+                errG_64 = self.g_loss_64.eval({self.real_data: batch_images})
+                errG_128 = self.g_loss_128.eval({self.real_data: batch_images})
+                errG_256 = self.g_loss_256.eval({self.real_data: batch_images})
 
                 counter += 1
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f]" \
                     % (epoch, idx, batch_idxs,
-                        time.time() - start_time, errD_fake+errD_real, errG))
+                        time.time() - start_time, 
+                        errD_fake_64+errD_real, errD_fake_128+errD_real, errD_fake_256+errD_real
+                        errG_64, errG_128, errG_256))
 
                 if np.mod(counter, 100) == 1:
                     self.sample_model(args.sample_dir, epoch, idx)
