@@ -382,7 +382,7 @@ class pix2pix(object):
         return tf.nn.relu(rb_sum)
 
     def generator_64_to_128(self, image, y=None):
-        with tf.variable_scope("generator_64_to_128") as scope:
+        with tf.variable_scope("generator") as scope:
             rb1 = self.residual_block_1_64(image)
             rb2 = self.residual_block_2_64(rb1)
             s = self.output_size
@@ -408,7 +408,7 @@ class pix2pix(object):
         return tf.nn.relu(rb_sum)
 
     def generator_128_to_256(self, image, y=None):
-        with tf.variable_scope("generator_128_to_256") as scope:
+        with tf.variable_scope("generator") as scope:
             rb1 = self.residual_block_1_128(image)
             rb2 = self.residual_block_2_128(rb1)
             s = self.output_size
@@ -418,7 +418,7 @@ class pix2pix(object):
             return tf.nn.relu(self.d8)
 
     def generator_128_to_64(self, image, y=None):
-        with tf.variable_scope("generator_128_to_64") as scope:
+        with tf.variable_scope("generator") as scope:
 
             s = self.output_size
             s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
@@ -473,9 +473,7 @@ class pix2pix(object):
 
     def sampler(self, image, y=None):
 
-        out_64 = None
-        out_128 = None
-        with tf.variable_scope("generator_128_to_64") as scope:
+        with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
 
             s = self.output_size
@@ -529,8 +527,6 @@ class pix2pix(object):
 
             out_64 = tf.nn.relu(self.d6)
 
-        with tf.variable_scope("generator_64_to_128") as scope:
-            scope.reuse_variables()
             rb1 = self.residual_block_1_64(out_64)
             rb2 = self.residual_block_2_64(rb1)
             s2 = int(s/2)
@@ -540,8 +536,6 @@ class pix2pix(object):
             # d7 is (128 x 128 x self.gf_dim*1*2)
             out_128 = tf.nn.relu(self.d7)
 
-        with tf.variable_scope("generator_128_to_256") as scope:
-            scope.reuse_variables()
             rb1 = self.residual_block_1_128(image)
             rb2 = self.residual_block_2_128(rb1)
             self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
