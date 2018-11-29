@@ -228,13 +228,13 @@ class pix2pix(object):
 
         self.g_sum_64 = tf.summary.merge([self.d_64_sum,
             self.fake_B_64_sum, self.d_loss_fake_64_sum, self.g_loss_64_sum])
-        self.d_sum_64 = tf.summary.merge([self.d_sum_64, self.d_loss_real_64_sum, self.d_loss_64_sum])
+        self.d_sum_64 = tf.summary.merge([self.d64_sum, self.d_loss_real_64_sum, self.d_loss_64_sum])
         self.g_sum_128 = tf.summary.merge([self.d_128_sum,
             self.fake_B_128_sum, self.d_loss_fake_128_sum, self.g_loss_128_sum])
-        self.d_sum_128 = tf.summary.merge([self.d_sum_128, self.d_loss_real_128_sum, self.d_loss_128_sum])
+        self.d_sum_128 = tf.summary.merge([self.d128_sum, self.d_loss_real_128_sum, self.d_loss_128_sum])
         self.g_sum_256 = tf.summary.merge([self.d_256_sum,
             self.fake_B_256_sum, self.d_loss_fake_256_sum, self.g_loss_256_sum])
-        self.d_sum_256 = tf.summary.merge([self.d_sum_256, self.d_loss_real_256_sum, self.d_loss_256_sum])
+        self.d_sum_256 = tf.summary.merge([self.d256_sum, self.d_loss_real_256_sum, self.d_loss_256_sum])
         self.writer = tf.summary.FileWriter("./logs", self.sess.graph)
 
         counter = 1
