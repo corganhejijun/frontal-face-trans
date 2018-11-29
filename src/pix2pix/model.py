@@ -473,6 +473,8 @@ class pix2pix(object):
 
     def sampler(self, image, y=None):
 
+        out_64 = None
+        out_128 = None
         with tf.variable_scope("generator_128_to_64") as scope:
             scope.reuse_variables()
 
@@ -527,25 +529,25 @@ class pix2pix(object):
 
             out_64 = tf.nn.relu(self.d6)
 
-            with tf.variable_scope("generator_64_to_128") as scope:
-                scope.reuse_variables()
-                rb1 = self.residual_block_1_64(out_64)
-                rb2 = self.residual_block_2_64(rb1)
-                s2 = int(s/2)
-                self.d7, self.d7_w, self.d7_b = deconv2d(rb2,
-                    [self.batch_size, s2, s2, self.output_c_dim], name='g_d7', with_w=True)
-                d7 = self.g_bn_d7(self.d7)
-                # d7 is (128 x 128 x self.gf_dim*1*2)
-                out_128 = tf.nn.relu(self.d7)
+        with tf.variable_scope("generator_64_to_128") as scope:
+            scope.reuse_variables()
+            rb1 = self.residual_block_1_64(out_64)
+            rb2 = self.residual_block_2_64(rb1)
+            s2 = int(s/2)
+            self.d7, self.d7_w, self.d7_b = deconv2d(rb2,
+                [self.batch_size, s2, s2, self.output_c_dim], name='g_d7', with_w=True)
+            d7 = self.g_bn_d7(self.d7)
+            # d7 is (128 x 128 x self.gf_dim*1*2)
+            out_128 = tf.nn.relu(self.d7)
 
-                with tf.variable_scope("generator_128_to_256") as scope:
-                    scope.reuse_variables()
-                    rb1 = self.residual_block_1_128(image)
-                    rb2 = self.residual_block_2_128(rb1)
-                    self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
-                        [self.batch_size, s, s, self.output_c_dim], name='g_d8', with_w=True)
-                    # d8 is (256 x 256 x output_c_dim)
-                    return tf.nn.relu(self.d8)
+        with tf.variable_scope("generator_128_to_256") as scope:
+            scope.reuse_variables()
+            rb1 = self.residual_block_1_128(image)
+            rb2 = self.residual_block_2_128(rb1)
+            self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
+                [self.batch_size, s, s, self.output_c_dim], name='g_d8', with_w=True)
+            # d8 is (256 x 256 x output_c_dim)
+            return tf.nn.relu(self.d8)
 
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
