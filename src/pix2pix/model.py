@@ -93,8 +93,8 @@ class pix2pix(object):
         self.fake_B_256 = self.generator_128_to_256(self.fake_B_128)
 
         self.real_AB = tf.concat([self.real_A, self.real_B], 3)
-        self.fake_AB_64 = tf.concat([self.real_A_64, self.fake_B_64])
-        self.fake_AB_128 = tf.concat([self.real_A_128, self.fake_B_128])
+        self.fake_AB_64 = tf.concat([self.real_A_64, self.fake_B_64], 3)
+        self.fake_AB_128 = tf.concat([self.real_A_128, self.fake_B_128], 3)
         self.fake_AB_256 = tf.concat([self.real_A, self.fake_B_256], 3)
         self.D, self.D_logits = self.discriminator_256(self.real_AB, reuse=False)
         self.D_64, self.D_logits_64 = self.discriminator_64(self.fake_AB_64, reuse=True)
