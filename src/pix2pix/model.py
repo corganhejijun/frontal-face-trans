@@ -276,7 +276,7 @@ class pix2pix(object):
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f]" \
                     % (epoch, idx, batch_idxs,
                         time.time() - start_time, 
-                        errD_fake_64+errD_real, errD_fake_128+errD_real, errD_fake_256+errD_real
+                        errD_fake_64+errD_real, errD_fake_128+errD_real, errD_fake_256+errD_real,
                         errG_64, errG_128, errG_256))
 
                 if np.mod(counter, 100) == 1:
