@@ -74,11 +74,11 @@ class pix2pix(object):
                                         name='real_A_and_B_images')
 
         self.real_B = self.real_data[:, :, :, :self.input_c_dim]
-        self.real_B_128 = tf.image.resize_images(self.real_B, (self.image_size / 2, self.image_size / 2))
-        self.real_B_64 = tf.image.resize_images(self.real_B, (self.image_size / 4, self.image_size / 4))
+        self.real_B_128 = tf.image.resize_images(self.real_B, (int(self.image_size / 2), int(self.image_size / 2)))
+        self.real_B_64 = tf.image.resize_images(self.real_B, (int(self.image_size / 4), int(self.image_size / 4)))
         self.real_A = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
-        self.real_A_128 = tf.image.resize_images(self.real_A, (self.image_size / 2, self.image_size / 2))
-        self.real_A_64 = tf.image.resize_images(self.real_A, (self.image_size / 4, self.image_size / 4))
+        self.real_A_128 = tf.image.resize_images(self.real_A, (int(self.image_size / 2), int(self.image_size / 2)))
+        self.real_A_64 = tf.image.resize_images(self.real_A, (int(self.image_size / 4), int(self.image_size / 4)))
 
         self.fake_B_64 = self.generator_128_to_64(self.real_A)
         self.fake_B_128 = self.generator_64_to_128(self.fake_B_64)
