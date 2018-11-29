@@ -354,16 +354,16 @@ class pix2pix(object):
             return tf.nn.sigmoid(h4), h4
 
     def residual_block_1_64(self, image):
-        rb1 = self.g_bn_rb1_1_64(conv2d(image, self.gf_dim * 4, name='g_rb_64_conv_rb1_1'))
+        rb1 = self.g_bn_rb1_1_64(conv2d(image, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_64_conv_rb1_1'))
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb1_2_64(conv2d(rb1, self.gf_dim * 4, name='g_rb_64_conv_rb1_2'))
+        rb2 = self.g_bn_rb1_2_64(conv2d(rb1, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_64_conv_rb1_2'))
         rb_sum = tf.add(image, rb2, name='g_rb_64_add_rb1')
         return tf.nn.relu(rb_sum)
 
     def residual_block_2_64(self, image):
-        rb1 = self.g_bn_rb2_1_64(conv2d(image, self.gf_dim * 4, name='g_rb_64_conv_rb2_1'))
+        rb1 = self.g_bn_rb2_1_64(conv2d(image, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_64_conv_rb2_1'))
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb2_2_64(conv2d(rb1, self.gf_dim * 4, name='g_rb_64_conv_rb2_2'))
+        rb2 = self.g_bn_rb2_2_64(conv2d(rb1, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_64_conv_rb2_2'))
         rb_sum = tf.add(image, rb2, name='g_rb_64_add_rb2')
         return tf.nn.relu(rb_sum)
 
@@ -380,16 +380,16 @@ class pix2pix(object):
             return tf.nn.relu(self.d7)
 
     def residual_block_1_128(self, image):
-        rb1 = self.g_bn_rb1_1_128(conv2d(image, self.gf_dim * 4, name='g_rb_128_conv_rb1_1'))
+        rb1 = self.g_bn_rb1_1_128(conv2d(image, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_128_conv_rb1_1'))
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb1_2_128(conv2d(rb1, self.gf_dim * 4, name='g_rb_128_conv_rb1_2'))
+        rb2 = self.g_bn_rb1_2_128(conv2d(rb1, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_128_conv_rb1_2'))
         rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb1')
         return tf.nn.relu(rb_sum)
 
     def residual_block_2_128(self, image):
-        rb1 = self.g_bn_rb2_1_128(conv2d(image, self.gf_dim * 4, name='g_rb_128_conv_rb2_1'))
+        rb1 = self.g_bn_rb2_1_128(conv2d(image, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_128_conv_rb2_1'))
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb2_2_128(conv2d(rb1, self.gf_dim * 4, name='g_rb_128_conv_rb2_2'))
+        rb2 = self.g_bn_rb2_2_128(conv2d(rb1, self.gf_dim * 4, d_h=1, d_w=1, name='g_rb_128_conv_rb2_2'))
         rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb2')
         return tf.nn.relu(rb_sum)
 
