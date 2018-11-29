@@ -353,7 +353,7 @@ class pix2pix(object):
         return tf.nn.relu(rb_sum)
 
     def generator_64_to_128(self, image, y=None):
-        with tf.variable_scope("generator_128_to_64") as scope:
+        with tf.variable_scope("generator_64_to_128") as scope:
             rb1 = self.residual_block(image, sur_name='rb1')
             rb2 = self.residual_block(rb1, sur_name='rb2')
             s = self.output_size
@@ -365,7 +365,7 @@ class pix2pix(object):
             return tf.nn.relu(self.d7)
 
     def generator_128_to_256(self, image, y=None):
-        with tf.variable_scope("generator_128_to_64") as scope:
+        with tf.variable_scope("generator_128_to_256") as scope:
             rb1 = self.residual_block(image, sur_name='rb1')
             rb2 = self.residual_block(rb1, sur_name='rb2')
             s = self.output_size
