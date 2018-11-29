@@ -62,6 +62,15 @@ class pix2pix(object):
         self.g_bn_d6 = batch_norm(name='g_bn_d6')
         self.g_bn_d7 = batch_norm(name='g_bn_d7')
 
+        self.g_bn_rb1_1_64 = batch_norm(name='g_bn_rb1_1_64')
+        self.g_bn_rb1_2_64 = batch_norm(name='g_bn_rb1_2_64')
+        self.g_bn_rb2_1_64 = batch_norm(name='g_bn_rb2_1_64')
+        self.g_bn_rb2_2_64 = batch_norm(name='g_bn_rb2_2_64')
+        self.g_bn_rb1_1_128 = batch_norm(name='g_bn_rb1_1_128')
+        self.g_bn_rb1_2_128 = batch_norm(name='g_bn_rb1_2_128')
+        self.g_bn_rb2_1_128 = batch_norm(name='g_bn_rb2_1_128')
+        self.g_bn_rb2_2_128 = batch_norm(name='g_bn_rb2_2_128')
+
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
         self.build_model()
@@ -344,17 +353,24 @@ class pix2pix(object):
 
             return tf.nn.sigmoid(h4), h4
 
-    def residual_block(self, image, sur_name):
-        rb1 = batch_norm(conv2d(image, self.gf_dim * 4, name='g_rb1_conv' + sur_name), name='g_bn_rg_1' + sur_name)
+    def residual_block_1_64(self, image):
+        rb1 = self.g_bn_rb1_1_64(conv2d(image, self.gf_dim * 4, name='g_rb_64_conv_rb1_1'))
         rb1 = tf.nn.relu(rb1)
-        rb2 = batch_norm(conv2d(rb1, self.gf_dim * 4, name='g_rb2_conv' + sur_name), name='g_bn_rg_2' + sur_name)
-        rb_sum = tf.add(image, rb2, name='g_rb_add' + sur_name)
+        rb2 = self.g_bn_rb1_2_64(conv2d(rb1, self.gf_dim * 4, name='g_rb_64_conv_rb1_2'))
+        rb_sum = tf.add(image, rb2, name='g_rb_64_add_rb1')
+        return tf.nn.relu(rb_sum)
+
+    def residual_block_2_64(self, image):
+        rb1 = self.g_bn_rb2_1_64(conv2d(image, self.gf_dim * 4, name='g_rb_64_conv_rb2_1'))
+        rb1 = tf.nn.relu(rb1)
+        rb2 = self.g_bn_rb2_2_64(conv2d(rb1, self.gf_dim * 4, name='g_rb_64_conv_rb2_2'))
+        rb_sum = tf.add(image, rb2, name='g_rb_64_add_rb2')
         return tf.nn.relu(rb_sum)
 
     def generator_64_to_128(self, image, y=None):
         with tf.variable_scope("generator_64_to_128") as scope:
-            rb1 = self.residual_block(image, sur_name='rb1')
-            rb2 = self.residual_block(rb1, sur_name='rb2')
+            rb1 = self.residual_block_1_64(image)
+            rb2 = self.residual_block_2_64(rb1)
             s = self.output_size
             s2 = int(s/2)
             self.d7, self.d7_w, self.d7_b = deconv2d(rb2,
@@ -363,10 +379,24 @@ class pix2pix(object):
             # d7 is (128 x 128 x self.gf_dim*1*2)
             return tf.nn.relu(self.d7)
 
+    def residual_block_1_128(self, image):
+        rb1 = self.g_bn_rb1_1_128(conv2d(image, self.gf_dim * 4, name='g_rb_128_conv_rb1_1'))
+        rb1 = tf.nn.relu(rb1)
+        rb2 = self.g_bn_rb1_2_128(conv2d(rb1, self.gf_dim * 4, name='g_rb_128_conv_rb1_2'))
+        rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb1')
+        return tf.nn.relu(rb_sum)
+
+    def residual_block_2_128(self, image):
+        rb1 = self.g_bn_rb2_1_128(conv2d(image, self.gf_dim * 4, name='g_rb_128_conv_rb2_1'))
+        rb1 = tf.nn.relu(rb1)
+        rb2 = self.g_bn_rb2_2_128(conv2d(rb1, self.gf_dim * 4, name='g_rb_128_conv_rb2_2'))
+        rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb2')
+        return tf.nn.relu(rb_sum)
+
     def generator_128_to_256(self, image, y=None):
         with tf.variable_scope("generator_128_to_256") as scope:
-            rb1 = self.residual_block(image, sur_name='rb1')
-            rb2 = self.residual_block(rb1, sur_name='rb2')
+            rb1 = self.residual_block_1_128(image)
+            rb2 = self.residual_block_2_128(rb1)
             s = self.output_size
             self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
                 [self.batch_size, s, s, self.output_c_dim], name='g_d8', with_w=True)
