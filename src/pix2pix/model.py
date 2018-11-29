@@ -201,7 +201,7 @@ class pix2pix(object):
     def sample_model(self, sample_dir, epoch, idx):
         sample_images = self.load_random_samples()
         samples, d_loss, g_loss = self.sess.run(
-            [self.fake_B_sample, self.d_loss, self.g_loss],
+            [self.fake_B_sample, self.d_loss_256, self.g_loss_256],
             feed_dict={self.real_data: sample_images}
         )
         save_images(samples, [self.batch_size, 1],
