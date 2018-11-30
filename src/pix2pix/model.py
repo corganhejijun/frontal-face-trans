@@ -514,27 +514,32 @@ class pix2pix(object):
 
             self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
                 [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = self.g_bn_d1_64(self.d1)
+            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1))
+            d1 = tf.concat([d1, e6], 3)
             # d1 is (2 x 2 x self.gf_dim*8*2)
 
             self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
                 [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = self.g_bn_d2_64(self.d2)
+            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2))
+            d2 = tf.concat([d2, e5], 3)
             # d2 is (4 x 4 x self.gf_dim*8*2)
 
             self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
                 [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = self.g_bn_d3_64(self.d3)
+            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3))
+            d3 = tf.concat([d3, e4], 3)
             # d3 is (8 x 8 x self.gf_dim*8*2)
 
             self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
                 [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
             d4 = self.g_bn_d4_64(self.d4)
+            d4 = tf.concat([d4, e3], 3)
             # d4 is (16 x 16 x self.gf_dim*8*2)
 
             self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
                 [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
             d5 = self.g_bn_d5_64(self.d5)
+            d5 = tf.concat([d5, e2], 3)
             # d5 is (32 x 32 x self.gf_dim*4*2)
 
             self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
@@ -542,7 +547,7 @@ class pix2pix(object):
             d6 = self.g_bn_d6_64(self.d6)
             # d6 is (64 x 64 x self.gf_dim*2*2)
 
-            out_64 = tf.nn.relu(self.d6)
+            out_64 = tf.nn.tanh(d6)
 
             rb1 = self.residual_block_1_128(out_64)
             rb2 = self.residual_block_2_128(rb1)
@@ -551,14 +556,14 @@ class pix2pix(object):
                 [self.batch_size, s2, s2, self.output_c_dim], name='g_d7_128', with_w=True)
             d7 = self.g_bn_d7_128(self.d7)
             # d7 is (128 x 128 x self.gf_dim*1*2)
-            out_128 = tf.nn.relu(self.d7)
+            out_128 = tf.nn.tanh(d7)
 
-            rb1 = self.residual_block_1_256(image)
+            rb1 = self.residual_block_1_256(out_128)
             rb2 = self.residual_block_2_256(rb1)
             self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
                 [self.batch_size, s, s, self.output_c_dim], name='g_d8_256', with_w=True)
             # d8 is (256 x 256 x output_c_dim)
-            return tf.nn.relu(self.d8)
+            return tf.nn.tanh(self.d8)
 
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
