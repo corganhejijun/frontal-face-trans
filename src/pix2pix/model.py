@@ -257,34 +257,44 @@ class pix2pix(object):
                     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
                 else:
                     batch_images = np.array(batch).astype(np.float32)
+                gen_repeat = 2
+                dis_repeat = 1
 
-                # Update D network
-                _, summary_str = self.sess.run([d_optim_64, self.d_sum_64],
-                                               feed_dict={ self.real_data: batch_images })
-                self.writer.add_summary(summary_str, counter)
+                for i in range(dis_repeat):
+                    # Update D network
+                    _, summary_str = self.sess.run([d_optim_64, self.d_sum_64],
+                                                feed_dict={ self.real_data: batch_images })
+                    self.writer.add_summary(summary_str, counter)
 
-                # Update G network
-                _, summary_str = self.sess.run([g_optim_64, self.g_sum_64],
-                                               feed_dict={ self.real_data: batch_images })
-                self.writer.add_summary(summary_str, counter)
+                for i in range(gen_repeat):
+                    # Update G network
+                    _, summary_str = self.sess.run([g_optim_64, self.g_sum_64],
+                                                feed_dict={ self.real_data: batch_images })
+                    self.writer.add_summary(summary_str, counter)
 
-                # Update D network
-                _, summary_str = self.sess.run([d_optim_128, self.d_sum_128],
-                                               feed_dict={ self.real_data: batch_images })
-                self.writer.add_summary(summary_str, counter)
+                for i in range(dis_repeat):
+                    # Update D network
+                    _, summary_str = self.sess.run([d_optim_128, self.d_sum_128],
+                                                feed_dict={ self.real_data: batch_images })
+                    self.writer.add_summary(summary_str, counter)
 
-                # Update G network
-                _, summary_str = self.sess.run([g_optim_128, self.g_sum_128],
-                                               feed_dict={ self.real_data: batch_images })
+                for i in range(gen_repeat):
+                    # Update G network
+                    _, summary_str = self.sess.run([g_optim_128, self.g_sum_128],
+                                                feed_dict={ self.real_data: batch_images })
+                    self.writer.add_summary(summary_str, counter)
 
-                # Update D network
-                _, summary_str = self.sess.run([d_optim_256, self.d_sum_256],
-                                               feed_dict={ self.real_data: batch_images })
-                self.writer.add_summary(summary_str, counter)
+                for i in range(dis_repeat):
+                    # Update D network
+                    _, summary_str = self.sess.run([d_optim_256, self.d_sum_256],
+                                                feed_dict={ self.real_data: batch_images })
+                    self.writer.add_summary(summary_str, counter)
 
-                # Update G network
-                _, summary_str = self.sess.run([g_optim_256, self.g_sum_256],
-                                               feed_dict={ self.real_data: batch_images })
+                for i in range(gen_repeat):
+                    # Update G network
+                    _, summary_str = self.sess.run([g_optim_256, self.g_sum_256],
+                                                feed_dict={ self.real_data: batch_images })
+                    self.writer.add_summary(summary_str, counter)
 
                 errD_fake_64 = self.d_loss_fake_64.eval({self.real_data: batch_images})
                 errD_fake_128 = self.d_loss_fake_128.eval({self.real_data: batch_images})
@@ -393,7 +403,7 @@ class pix2pix(object):
                 [self.batch_size, s2, s2, self.output_c_dim], name='g_d7_128', with_w=True)
             d7 = self.g_bn_d7_128(self.d7)
             # d7 is (128 x 128 x self.gf_dim*1*2)
-            return tf.nn.relu(d7)
+            return tf.nn.tanh(d7)
 
     def residual_block_1_256(self, image):
         rb1 = self.g_bn_rb1_1_256(conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb1_1'))
@@ -417,7 +427,7 @@ class pix2pix(object):
             self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
                 [self.batch_size, s, s, self.output_c_dim], name='g_d8_256', with_w=True)
             # d8 is (256 x 256 x output_c_dim)
-            return tf.nn.relu(self.d8)
+            return tf.nn.tanh(self.d8)
 
     def generator_128_to_64(self, image, y=None):
         with tf.variable_scope("generator") as scope:
@@ -443,27 +453,32 @@ class pix2pix(object):
 
             self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
                 [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = self.g_bn_d1_64(self.d1)
+            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1))
+            d1 = tf.concat([d1, e7], 3)
             # d1 is (2 x 2 x self.gf_dim*8*2)
 
             self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
                 [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = self.g_bn_d2_64(self.d2)
+            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2))
+            d2 = tf.concat([d2, e6], 3)
             # d2 is (4 x 4 x self.gf_dim*8*2)
 
             self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
                 [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = self.g_bn_d3_64(self.d3)
+            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3))
+            d3 = tf.concat([d3, e5], 3)
             # d3 is (8 x 8 x self.gf_dim*8*2)
 
             self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
                 [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
             d4 = self.g_bn_d4_64(self.d4)
+            d4 = tf.concat([d4, e4], 3)
             # d4 is (16 x 16 x self.gf_dim*8*2)
 
             self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
                 [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
             d5 = self.g_bn_d5_64(self.d5)
+            d5 = tf.concat([d5, e3], 3)
             # d5 is (32 x 32 x self.gf_dim*4*2)
 
             self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
@@ -471,7 +486,7 @@ class pix2pix(object):
             d6 = self.g_bn_d6_64(self.d6)
             # d6 is (64 x 64 x self.gf_dim*2*2)
 
-            return tf.nn.relu(self.d6)
+            return tf.nn.tanh(d6)
 
     def sampler(self, image, y=None):
 
