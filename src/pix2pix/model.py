@@ -453,19 +453,19 @@ class pix2pix(object):
 
             self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
                 [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1))
+            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
             d1 = tf.concat([d1, e7], 3)
             # d1 is (2 x 2 x self.gf_dim*8*2)
 
             self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
                 [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2))
+            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
             d2 = tf.concat([d2, e6], 3)
             # d2 is (4 x 4 x self.gf_dim*8*2)
 
             self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
                 [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3))
+            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
             d3 = tf.concat([d3, e5], 3)
             # d3 is (8 x 8 x self.gf_dim*8*2)
 
