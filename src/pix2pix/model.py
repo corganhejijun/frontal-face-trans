@@ -10,8 +10,8 @@ from ops import *
 from utils import *
 
 class pix2pix(object):
-    def __init__(self, sess, image_size=128,
-                 batch_size=1, sample_size=1, output_size=128,
+    def __init__(self, sess, image_size=256,
+                 batch_size=1, sample_size=1, output_size=256, load_size=286,
                  gf_dim=64, df_dim=64, L1_lambda=100,
                  input_c_dim=3, output_c_dim=3, dataset_name='facades',
                  checkpoint_dir=None, sample_dir=None):
@@ -32,6 +32,7 @@ class pix2pix(object):
         self.image_size = image_size
         self.sample_size = sample_size
         self.output_size = output_size
+        self.load_size = load_size
 
         self.gf_dim = gf_dim
         self.df_dim = df_dim
@@ -83,12 +84,12 @@ class pix2pix(object):
                                          self.input_c_dim + self.output_c_dim],
                                         name='real_A_and_B_images')
 
-        self.real_B_128 = self.real_data[:, :, :, :self.input_c_dim]
-        self.real_B_256 = tf.image.resize_images(self.real_B_128, (int(self.image_size * 2), int(self.image_size * 2)))
-        self.real_B_64 = tf.image.resize_images(self.real_B_128, (int(self.image_size / 2), int(self.image_size / 2)))
-        self.real_A_128 = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
-        self.real_A_256 = tf.image.resize_images(self.real_A_128, (int(self.image_size * 2), int(self.image_size * 2)))
-        self.real_A_64 = tf.image.resize_images(self.real_A_128, (int(self.image_size / 2), int(self.image_size / 2)))
+        self.real_B_64 = tf.image.resize_images(self.real_B_128, (int(self.image_size / 4), int(self.image_size / 2)))
+        self.real_B_128 = tf.image.resize_images(self.real_B_128, (int(self.image_size / 2), int(self.image_size * 2)))
+        self.real_B_256 = self.real_data[:, :, :, :self.input_c_dim]
+        self.real_A_64 = tf.image.resize_images(self.real_A_128, (int(self.image_size / 4), int(self.image_size / 2)))
+        self.real_A_128 = tf.image.resize_images(self.real_A_128, (int(self.image_size / 2), int(self.image_size * 2)))
+        self.real_A_256 = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
 
         self.fake_B_64 = self.generator_128_to_64(self.real_A_128)
         self.fake_B_128 = self.generator_64_to_128(self.fake_B_64)
@@ -192,7 +193,7 @@ class pix2pix(object):
 
     def load_random_samples(self):
         data = np.random.choice(glob('./datasets/{}/val/*.jpg'.format(self.dataset_name)), self.batch_size)
-        sample = [load_data(sample_file) for sample_file in data]
+        sample = [load_data(sample_file, self.image_size, self.load_size) for sample_file in data]
 
         if (self.is_grayscale):
             sample_images = np.array(sample).astype(np.float32)[:, :, :, None]
@@ -747,7 +748,7 @@ class pix2pix(object):
             # load testing input
             print("Loading testing images ... from {0} to {1} of total {2}".format(batch_count * max_size, endIdx, len(sample_files_all)))
             batch_count += 1
-            sample = [load_data(sample_file, is_test=True) for sample_file in sample_files]
+            sample = [load_data(sample_file, args.test_size, self.load_size, is_test=True) for sample_file in sample_files]
 
             if (self.is_grayscale):
                 sample_images = np.array(sample).astype(np.float32)[:, :, :, None]
