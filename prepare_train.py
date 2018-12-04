@@ -22,7 +22,7 @@ DEST_DIR = "datasets/celeba_train_hd"
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
 FRONT_THRESHOLD_DISTANCE = 30
-MINIMUM_FACE_SIZE = 200
+MINIMUM_FACE_SIZE = 128
 
 folder = MIDDLE_DIR
 ext = '.jpg'
@@ -45,12 +45,16 @@ for subFolder in folderList:
         destFilePath = os.path.join(DEST_DIR, subFolder, fileName)
         if os.path.exists(destFilePath):
             continue
-        img = cv2.cvtColor(cv2.imread(srcFilePath), cv2.COLOR_BGR2RGB)
+        try:
+            img = cv2.cvtColor(cv2.imread(srcFilePath), cv2.COLOR_BGR2RGB)
+        except Exception as err:
+            print("{0} folder file {1} read failed, err:{2}.".format(subFolder, fileName, str(err)))
+            continue
         landmarks, _, shape = getFaceDis(img, detector, shapePredict, fileName)
-        xmin, xmax, ymin, ymax = getBound(img, shape)
         if landmarks is None:
             continue
-        if xmax - xmin < MINIMUM_FACE_SIZE or ymax - ymin < MINIMUM_FACE_SIZE:
+        xmin, xmax, ymin, ymax = getBound(img, shape)
+        if xmax - xmin < MINIMUM_FACE_SIZE and ymax - ymin < MINIMUM_FACE_SIZE:
             print("{0} folder file {1} has face size of {2} x {3}, too small.".format(subFolder, fileName, 
                                                                                         (xmax - xmin), (ymax - ymin)))
             continue

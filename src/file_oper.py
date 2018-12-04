@@ -15,8 +15,9 @@ def copy_celeba(identity, dataset, outDir):
         if not os.path.exists(subDir):
             os.mkdir(subDir)
         dest = os.path.join(subDir, fileName)
-        if not os.path.exists(dest):
-            copyfile(os.path.join(dataset, fileName), dest)
+        src = os.path.join(dataset, fileName)
+        if not os.path.exists(dest) and os.path.exists(src):
+            copyfile(src, dest)
         count += 1
         if count % 1000 == 0:
             print("%d files had been copied" % count)
