@@ -10,13 +10,13 @@ from src.resize_for_train import resizeMargin, combineImg
 FRONT_FACE_STANDARD = "datasets/eigen_face.jpg"
 SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
 DATASET_DIR = "datasets/celeba_train"
-DEST_DIR = "datasets/celeba_train_on_mask"
+DEST_DIR = "datasets/celeba_train_on_mask_256"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
 FRONT_THRESHOLD_DISTANCE = 30
 ext = '.jpg'
-IMAGE_SIZE = 128
+IMAGE_SIZE = 256
 BLACK_POINT_VALUE = 100
 standardLandmarks = getStandardFace(FRONT_FACE_STANDARD, detector, shapePredict)
 
@@ -72,4 +72,4 @@ for subFolder in folderList:
                         frontWithMsk[i][j] = other[i][j]
             result = combineImg(front, frontWithMsk)
             number += 1
-            result.save(os.path.join(DEST_DIR, str(number).zfill(6) + ext))
+            result.save(os.path.join(DEST_DIR, fileName))
