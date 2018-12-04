@@ -7,20 +7,22 @@ import numpy as np
 import cv2
 from shutil import copyfile
 from src.face_landmark import getFaceDis, getStandardFace
+from src.util import getBound
 
 CELEBA_IDENTITY_FILE = "datasets/celeba/identity_CelebA.txt"
-CELEBA_DATASET = "datasets/celeba/img_align_celeba"
+CELEBA_DATASET = "datasets/celeba/img_celeba"
 MIDDLE_DIR = "datasets/celeba/celeba_identified"
 
 copy_celeba(CELEBA_IDENTITY_FILE, CELEBA_DATASET, MIDDLE_DIR)
 
 FRONT_FACE_STANDARD = "datasets/eigen_face.jpg"
 SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
-DEST_DIR = "datasets/celeba_train"
+DEST_DIR = "datasets/celeba_train_hd"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
 FRONT_THRESHOLD_DISTANCE = 30
+MINIMUM_FACE_SIZE = 200
 
 folder = MIDDLE_DIR
 ext = '.jpg'
@@ -44,8 +46,13 @@ for subFolder in folderList:
         if os.path.exists(destFilePath):
             continue
         img = cv2.cvtColor(cv2.imread(srcFilePath), cv2.COLOR_BGR2RGB)
-        landmarks, _, _ = getFaceDis(img, detector, shapePredict, fileName)
+        landmarks, _, shape = getFaceDis(img, detector, shapePredict, fileName)
+        xmin, xmax, ymin, ymax = getBound(img, shape)
         if landmarks is None:
+            continue
+        if xmax - xmin < MINIMUM_FACE_SIZE or ymax - ymin < MINIMUM_FACE_SIZE:
+            print("{0} folder file {1} has face size of {2} x {3}, too small.".format(subFolder, fileName, 
+                                                                                        (xmax - xmin), (ymax - ymin)))
             continue
         diff = np.linalg.norm(landmarks - standardLandmarks)
         if (diff < FRONT_THRESHOLD_DISTANCE):

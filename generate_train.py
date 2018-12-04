@@ -9,7 +9,7 @@ from src.resize_for_train import resizeMargin, combineImg
 
 FRONT_FACE_STANDARD = "datasets/eigen_face.jpg"
 SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
-DATASET_DIR = "datasets/celeba_train"
+DATASET_DIR = "datasets/celeba_train_hd"
 DEST_DIR = "datasets/celeba_train_on_mask_256"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
