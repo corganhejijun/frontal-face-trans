@@ -18,11 +18,16 @@ FRONT_THRESHOLD_DISTANCE = 30
 ext = '.jpg'
 IMAGE_SIZE = 256
 BLACK_POINT_VALUE = 100
+FACE_WIDTH_ADD = 5
+FACE_BOTTOM_ADD = 5
+FACE_TOP_ADD = 15
+TRANS_SCALE = 2
 standardLandmarks = getStandardFace(FRONT_FACE_STANDARD, detector, shapePredict)
 
 class Face:
-    def __init__(self, img, shape, detect, fileName):
+    def __init__(self, img, trans_img, shape, detect, fileName):
         self.img = img
+        self.trans_img = trans_img
         self.shape = shape
         self.detect = detect
         self.fileName = fileName
@@ -43,8 +48,9 @@ for subFolder in folderList:
             continue
         filePath = os.path.join(DATASET_DIR, subFolder, fileName)
         img = cv2.cvtColor(cv2.imread(filePath), cv2.COLOR_BGR2RGB)
-        landmarks, detect, shape = getFaceDis(img, detector, shapePredict, fileName)
-        face = Face(img, shape, detect, fileName)
+        trans_img = cv2.resize(img, (int(img.shape[1] / TRANS_SCALE), int(img.shape[0] / TRANS_SCALE)))
+        landmarks, detect, shape = getFaceDis(trans_img, detector, shapePredict, fileName)
+        face = Face(img, trans_img, shape, detect, fileName)
         if landmarks is None:
             continue
         diff = np.linalg.norm(landmarks - standardLandmarks)
@@ -54,22 +60,35 @@ for subFolder in folderList:
             otherList.append(face)
     print("subFolder {0} has {1} front faces".format(subFolder, len(frontList)))
     for frontFace in frontList:
-        xmin, xmax, ymin, ymax = getBound(frontFace.img, frontFace.shape)
+        xmin, xmax, ymin, ymax = getBound(frontFace.trans_img, frontFace.shape)
         ctrlDstPts = np.zeros((frontFace.shape.num_parts,2))
-        front, frontMargin = resizeMargin(frontFace.img[ymin:ymax,xmin:xmax,:], IMAGE_SIZE)
         for i in range(frontFace.shape.num_parts):
             ctrlDstPts[i] = [frontFace.shape.part(i).x - xmin, 
                                 frontFace.shape.part(i).y - ymin]
+        if ymin * TRANS_SCALE - FACE_TOP_ADD >= 0:
+            ymin = ymin * TRANS_SCALE - FACE_TOP_ADD
+        if ymax * TRANS_SCALE + FACE_BOTTOM_ADD <= frontFace.img.shape[0]:
+            ymax = ymax * TRANS_SCALE + FACE_BOTTOM_ADD
+        if xmin * TRANS_SCALE - FACE_WIDTH_ADD >= 0:
+            xmin = xmin * TRANS_SCALE - FACE_WIDTH_ADD
+        if xmax * TRANS_SCALE + FACE_WIDTH_ADD <= frontFace.img.shape[1]:
+            xmax = xmax * TRANS_SCALE + FACE_WIDTH_ADD
+        front, _ = resizeMargin(frontFace.img[ymin:ymax,xmin:xmax,:], IMAGE_SIZE)
         for face in otherList:
-            trans = transFaceImg(face.detect, face.shape, face.img, ctrlDstPts, face.fileName)
+            try:
+                trans = transFaceImg(face.detect, face.shape, face.trans_img, ctrlDstPts, face.fileName)
+            except Exception as err:
+                print("file {0} read failed, err:{1}.".format(face.fileName, str(err)))
+                continue
             if np.any(trans == None):
                 continue
-            other, otherMargin = resizeMargin(trans, IMAGE_SIZE)
+            other, _ = resizeMargin(trans, int(IMAGE_SIZE / TRANS_SCALE))
             frontWithMsk = np.copy(front)
             for i in range(len(other)):
                 for j in range(len(other[0])):
                     if np.sum(other[i][j]) < BLACK_POINT_VALUE:
-                        frontWithMsk[i][j] = other[i][j]
+                        for k in range(TRANS_SCALE):
+                            frontWithMsk[i*TRANS_SCALE + k][j*TRANS_SCALE : (j+1)*TRANS_SCALE] = other[i][j]
             result = combineImg(front, frontWithMsk)
             number += 1
-            result.save(os.path.join(DEST_DIR, fileName))
+            result.save(os.path.join(DEST_DIR, face.fileName))

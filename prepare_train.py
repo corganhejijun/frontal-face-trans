@@ -22,7 +22,7 @@ DEST_DIR = "datasets/celeba_train_hd"
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
 FRONT_THRESHOLD_DISTANCE = 30
-MINIMUM_FACE_SIZE = 128
+MINIMUM_FACE_SIZE = 50
 
 folder = MIDDLE_DIR
 ext = '.jpg'
