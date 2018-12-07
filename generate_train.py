@@ -14,7 +14,7 @@ DEST_DIR = "datasets/celeba_train_on_mask_256"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
-FRONT_THRESHOLD_DISTANCE = 30
+FRONT_THRESHOLD_DISTANCE = 50
 ext = '.jpg'
 IMAGE_SIZE = 256
 BLACK_POINT_VALUE = 100
