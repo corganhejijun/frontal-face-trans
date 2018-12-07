@@ -3,7 +3,7 @@ import dlib
 import os
 import numpy as np
 import cv2
-from src.face_landmark import getFaceDis, getStandardFace
+from src.face_landmark import getFaceDis, getStandardFace, resizeFace
 from src.util import getFace, getBound, transFaceImg
 from src.resize_for_train import resizeMargin, combineImg
 
@@ -34,8 +34,7 @@ class Face:
 
 if (not os.path.exists(DEST_DIR)):
     os.mkdir(DEST_DIR)
-    
-number = 0
+
 counter = 0
 folderList = os.listdir(DATASET_DIR)
 for subFolder in folderList:
@@ -47,12 +46,15 @@ for subFolder in folderList:
         if not fileName.endswith(ext):
             continue
         filePath = os.path.join(DATASET_DIR, subFolder, fileName)
-        img = cv2.cvtColor(cv2.imread(filePath), cv2.COLOR_BGR2RGB)
+        img = resizeFace(cv2.cvtColor(cv2.imread(filePath), cv2.COLOR_BGR2RGB), detector, shapePredict, 
+                            fileName, IMAGE_SIZE)
+        if img is None:
+            continue
         trans_img = cv2.resize(img, (int(img.shape[1] / TRANS_SCALE), int(img.shape[0] / TRANS_SCALE)))
         landmarks, detect, shape = getFaceDis(trans_img, detector, shapePredict, fileName)
-        face = Face(img, trans_img, shape, detect, fileName)
         if landmarks is None:
             continue
+        face = Face(img, trans_img, shape, detect, fileName)
         diff = np.linalg.norm(landmarks - standardLandmarks)
         if (diff < FRONT_THRESHOLD_DISTANCE):
             frontList.append(face)
@@ -90,5 +92,4 @@ for subFolder in folderList:
                         for k in range(TRANS_SCALE):
                             frontWithMsk[i*TRANS_SCALE + k][j*TRANS_SCALE : (j+1)*TRANS_SCALE] = other[i][j]
             result = combineImg(front, frontWithMsk)
-            number += 1
             result.save(os.path.join(DEST_DIR, face.fileName))

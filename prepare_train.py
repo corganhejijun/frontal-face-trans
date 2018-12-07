@@ -22,7 +22,7 @@ DEST_DIR = "datasets/celeba_train_hd"
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
 FRONT_THRESHOLD_DISTANCE = 30
-MINIMUM_FACE_SIZE = 50
+MINIMUM_FACE_SIZE = 30
 
 folder = MIDDLE_DIR
 ext = '.jpg'
@@ -32,6 +32,9 @@ if (not os.path.exists(DEST_DIR)):
 counter = 0
 folderList = os.listdir(folder)
 for subFolder in folderList:
+    if os.path.exists(os.path.join(DEST_DIR, subFolder)):
+        print("{0} folder exists".format(subFolder))
+        continue
     counter += 1
     fileList = os.listdir(os.path.join(folder, subFolder))
     if len(fileList) < 2:

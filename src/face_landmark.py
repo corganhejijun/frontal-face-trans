@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*- 
 import cv2
 import numpy as np
+from src.util import getBound
 
 NOSE_CENTER_NUMBER = 30
 
@@ -38,3 +39,29 @@ def getFaceDis(img, detector, shapePredict, path):
     for i in range(shape.num_parts):
         landmarkList[i] = [shape.part(i).x - noseCenter.x, shape.part(i).y - noseCenter.y]
     return landmarkList, detect, shape
+
+def resizeFace(img, detector, shape, path, size):
+    landmarks, detect, shape = getFaceDis(img, detector, shape, path)
+    if landmarks is None:
+        return None
+    if img.shape[0] < img.shape[1]:
+        noseCenter = shape.part(NOSE_CENTER_NUMBER).x
+        xmin = int(noseCenter - img.shape[0] / 2)
+        xmax = int(noseCenter + img.shape[0] / 2)
+        if xmin < 0:
+            xmin = 0
+            xmax = img.shape[0]
+        if xmax > img.shape[1]:
+            xmax = img.shape[1]
+            xmin = xmax - img.shape[0]
+        return cv2.resize(img[:, xmin:xmax, :], (size * 2, size * 2))
+    noseCenter = shape.part(NOSE_CENTER_NUMBER).y
+    ymin = int(noseCenter - img.shape[1] / 2)
+    ymax = int(noseCenter + img.shape[1] / 2)
+    if ymin < 0:
+        ymin = 0
+        ymax = img.shape[1]
+    if ymax > img.shape[0]:
+        ymax = img.shape[0]
+        ymin = ymax - img.shape[1]
+    return cv2.resize(img[ymin:ymax, :, :], (size * 2, size * 2))
