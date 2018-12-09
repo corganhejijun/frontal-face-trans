@@ -45,7 +45,7 @@ def main(_):
     if not os.path.exists(args.test_dir):
         os.makedirs(args.test_dir)
     if not os.path.exists(args.test_dir + '_64'):
-        os.makedirs(args.test_dir + '_128')
+        os.makedirs(args.test_dir + '_64')
     if not os.path.exists(args.test_dir + '_128'):
         os.makedirs(args.test_dir + '_128')
 
