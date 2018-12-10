@@ -136,14 +136,11 @@ class pix2pix(object):
                                                                                     labels=tf.zeros_like(self.D_256)))
         self.mask = tf.greater(tf.abs(self.real_B_256 - self.fake_B_256), 0) # only calculate the mean of different part
         self.g_loss_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.ones_like(self.D_64))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))\
-                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B_64) - tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64)))
+                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))
         self.g_loss_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, labels=tf.ones_like(self.D_128))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))\
-                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B_128) - tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128)))
+                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))
         self.g_loss_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_256, labels=tf.ones_like(self.D_256))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256))\
-                        + self.L1_lambda * 2 * tf.abs(tf.reduce_mean(self.real_B_256) - tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256)))
+                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256))
 
         self.d_loss_real_64_sum = tf.summary.scalar("d_loss_real_64", self.d_loss_real_64)
         self.d_loss_real_128_sum = tf.summary.scalar("d_loss_real_128", self.d_loss_real_128)
