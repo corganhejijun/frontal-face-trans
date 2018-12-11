@@ -395,11 +395,10 @@ class pix2pix(object):
 
     def generator_64_to_128(self, image, y=None):
         with tf.variable_scope("generator") as scope:
-            rb1 = self.residual_block_1_128(image)
-            rb2 = self.residual_block_2_128(rb1)
             s2 = int(self.output_size/2)
-            upsample = tf.image.resize_images(rb2, (s2, s2))
-            self.d7  = conv2d(upsample, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
+            rb1 = self.residual_block_1_128(tf.image.resize_images(image), (s2, s2))
+            rb2 = self.residual_block_2_128(rb1)
+            self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
             d7 = self.g_bn_d7_128(self.d7)
             # d7 is (128 x 128 x self.gf_dim*1*2)
             return tf.nn.tanh(d7)
@@ -420,11 +419,10 @@ class pix2pix(object):
 
     def generator_128_to_256(self, image, y=None):
         with tf.variable_scope("generator") as scope:
-            rb1 = self.residual_block_1_256(image)
-            rb2 = self.residual_block_2_256(rb1)
             s = self.output_size
-            upsample = tf.image.resize_images(rb2, (s, s))
-            self.d8 = conv2d(upsample, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
+            rb1 = self.residual_block_1_256(tf.image.resize_images(image, (s, s)))
+            rb2 = self.residual_block_2_256(rb1)
+            self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
             # d8 is (256 x 256 x output_c_dim)
             return tf.nn.tanh(self.d8)
 
