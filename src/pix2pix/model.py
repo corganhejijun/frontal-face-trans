@@ -397,10 +397,9 @@ class pix2pix(object):
         with tf.variable_scope("generator") as scope:
             rb1 = self.residual_block_1_128(image)
             rb2 = self.residual_block_2_128(rb1)
-            s = self.output_size
-            s2 = int(s/2)
-            self.d7, self.d7_w, self.d7_b = deconv2d(rb2,
-                [self.batch_size, s2, s2, self.output_c_dim], name='g_d7_128', with_w=True)
+            s2 = int(self.output_size/2)
+            upsample = tf.image.resize_images(rb2, (s2, s2))
+            self.d7, self.d7_w, self.d7_b = conv2d(upsample, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
             d7 = self.g_bn_d7_128(self.d7)
             # d7 is (128 x 128 x self.gf_dim*1*2)
             return tf.nn.tanh(d7)
@@ -424,8 +423,8 @@ class pix2pix(object):
             rb1 = self.residual_block_1_256(image)
             rb2 = self.residual_block_2_256(rb1)
             s = self.output_size
-            self.d8, self.d8_w, self.d8_b = deconv2d(rb2,
-                [self.batch_size, s, s, self.output_c_dim], name='g_d8_256', with_w=True)
+            upsample = tf.image.resize_images(rb2, (s, s))
+            self.d8 = conv2d(upsample, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
             # d8 is (256 x 256 x output_c_dim)
             return tf.nn.tanh(self.d8)
 
