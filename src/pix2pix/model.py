@@ -396,7 +396,7 @@ class pix2pix(object):
     def generator_64_to_128(self, image, y=None):
         with tf.variable_scope("generator") as scope:
             s2 = int(self.output_size/2)
-            rb1 = self.residual_block_1_128(tf.image.resize_images(image), (s2, s2))
+            rb1 = self.residual_block_1_128(tf.image.resize_images(image, (s2, s2)))
             rb2 = self.residual_block_2_128(rb1)
             self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
             d7 = self.g_bn_d7_128(self.d7)
