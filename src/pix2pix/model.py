@@ -399,9 +399,8 @@ class pix2pix(object):
             rb1 = self.residual_block_1_128(tf.image.resize_images(image, (s2, s2)))
             rb2 = self.residual_block_2_128(rb1)
             self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
-            d7 = self.g_bn_d7_128(self.d7)
             # d7 is (128 x 128 x self.gf_dim*1*2)
-            return tf.nn.tanh(d7)
+            return tf.nn.tanh(self.d7)
 
     def residual_block_1_256(self, image):
         rb1 = self.g_bn_rb1_1_256(conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb1_1'))
