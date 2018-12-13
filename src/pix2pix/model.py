@@ -676,10 +676,9 @@ class pix2pix(object):
 
             self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
                 [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
-            d6 = self.g_bn_d6_64(self.d6)
             # d6 is (64 x 64 x self.gf_dim*2*2)
 
-            out_64 = tf.nn.tanh(d6)
+            out_64 = tf.nn.tanh(self.d6)
 
             s2 = int(s/2)
             rb1 = self.residual_block_1_128(tf.image.resize_images(out_64, (s2, s2)))
