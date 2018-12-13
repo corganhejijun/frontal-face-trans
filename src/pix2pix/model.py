@@ -689,9 +689,8 @@ class pix2pix(object):
             s2 = int(s/2)
             self.d7, self.d7_w, self.d7_b = deconv2d(rb2,
                 [self.batch_size, s2, s2, self.output_c_dim], name='g_d7_128', with_w=True)
-            d7 = self.g_bn_d7_128(self.d7)
             # d7 is (128 x 128 x self.gf_dim*1*2)
-            return tf.nn.tanh(d7)
+            return tf.nn.tanh(self.d7)
 
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
