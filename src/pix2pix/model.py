@@ -380,47 +380,49 @@ class pix2pix(object):
             return tf.nn.sigmoid(h4), h4
 
     def residual_block_1_128(self, image):
-        rb1 = self.g_bn_rb1_1_128(conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_128_conv_rb1_1'))
+        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_128_conv_rb1_1')
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb1_2_128(conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_128_conv_rb1_2'))
+        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_128_conv_rb1_2')
         rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb1')
         return tf.nn.relu(rb_sum)
 
     def residual_block_2_128(self, image):
-        rb1 = self.g_bn_rb2_1_128(conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_128_conv_rb2_1'))
+        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_128_conv_rb2_1')
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb2_2_128(conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_128_conv_rb2_2'))
+        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_128_conv_rb2_2')
         rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb2')
         return tf.nn.relu(rb_sum)
 
     def generator_64_to_128(self, image, y=None):
         with tf.variable_scope("generator") as scope:
             s2 = int(self.output_size/2)
-            rb1 = self.residual_block_1_128(tf.image.resize_images(image, (s2, s2)))
+            rb1 = self.residual_block_1_128(image)
             rb2 = self.residual_block_2_128(rb1)
+            rb2 = tf.image.resize_images(rb2, (s2, s2))
             self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
             # d7 is (128 x 128 x self.gf_dim*1*2)
             return tf.nn.tanh(self.d7)
 
     def residual_block_1_256(self, image):
-        rb1 = self.g_bn_rb1_1_256(conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb1_1'))
+        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb1_1')
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb1_2_256(conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_256_conv_rb1_2'))
+        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_256_conv_rb1_2')
         rb_sum = tf.add(image, rb2, name='g_rb_256_add_rb1')
         return tf.nn.relu(rb_sum)
 
     def residual_block_2_256(self, image):
-        rb1 = self.g_bn_rb2_1_256(conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb2_1'))
+        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb2_1')
         rb1 = tf.nn.relu(rb1)
-        rb2 = self.g_bn_rb2_2_256(conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_256_conv_rb2_2'))
+        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_256_conv_rb2_2')
         rb_sum = tf.add(image, rb2, name='g_rb_256_add_rb2')
         return tf.nn.relu(rb_sum)
 
     def generator_128_to_256(self, image, y=None):
         with tf.variable_scope("generator") as scope:
             s = self.output_size
-            rb1 = self.residual_block_1_256(tf.image.resize_images(image, (s, s)))
+            rb1 = self.residual_block_1_256(image)
             rb2 = self.residual_block_2_256(rb1)
+            rb2 = tf.image.resize_images(rb2, (s, s))
             self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
             # d8 is (256 x 256 x output_c_dim)
             return tf.nn.tanh(self.d8)
@@ -480,6 +482,8 @@ class pix2pix(object):
             self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
                 [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
             # d6 is (64 x 64 x self.gf_dim*2*2)
+            self.d6_2 = self.g_bn_d6_64(self.d6)
+            self.d6_2 = tf.concat([self.d6_2, e1], 3)
 
             return tf.nn.tanh(self.d6)
 
@@ -540,20 +544,24 @@ class pix2pix(object):
             self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
                 [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
             # d6 is (64 x 64 x self.gf_dim*2*2)
+            self.d6_2 = self.g_bn_d6_64(self.d6)
+            self.d6_2 = tf.concat([self.d6_2, e1], 3)
 
             out_64 = tf.nn.tanh(self.d6)
 
             # 64 to 128
             s2 = int(s/2)
-            rb1 = self.residual_block_1_128(tf.image.resize_images(out_64, (s2, s2)))
+            rb1 = self.residual_block_1_128(out_64)
             rb2 = self.residual_block_2_128(rb1)
+            rb2 = tf.image.resize_images(rb2, (s2, s2))
             self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
             # d7 is (128 x 128 x self.gf_dim*1*2)
             out_128 = tf.nn.tanh(self.d7)
 
             # 128 to 256
-            rb1 = self.residual_block_1_256(tf.image.resize_images(out_128, (s, s)))
+            rb1 = self.residual_block_1_256(out_128)
             rb2 = self.residual_block_2_256(rb1)
+            rb2 = tf.image.resize_images(rb2, (s, s))
             self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
             # d8 is (256 x 256 x output_c_dim)
             return tf.nn.tanh(self.d8)
@@ -681,8 +689,9 @@ class pix2pix(object):
             out_64 = tf.nn.tanh(self.d6)
 
             s2 = int(s/2)
-            rb1 = self.residual_block_1_128(tf.image.resize_images(out_64, (s2, s2)))
+            rb1 = self.residual_block_1_128(out_64)
             rb2 = self.residual_block_2_128(rb1)
+            rb2 = tf.image.resize_images(rb2, (s2, s2))
             self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
             # d7 is (128 x 128 x self.gf_dim*1*2)
             return tf.nn.tanh(self.d7)
