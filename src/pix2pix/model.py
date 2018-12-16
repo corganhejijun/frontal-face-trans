@@ -257,37 +257,37 @@ class pix2pix(object):
                 else:
                     batch_images = np.array(batch).astype(np.float32)
 
-                for i in range(5):
+                for _ in range(5):
                     # Update D64 network
                     _, summary_str = self.sess.run([d_optim_64, self.d_sum_64],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(10):
+                for _ in range(10):
                     # Update G64 network
                     _, summary_str = self.sess.run([g_optim_64, self.g_sum_64],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(3):
+                for _ in range(3):
                     # Update D128 network
                     _, summary_str = self.sess.run([d_optim_128, self.d_sum_128],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(6):
+                for _ in range(6):
                     # Update G128 network
                     _, summary_str = self.sess.run([g_optim_128, self.g_sum_128],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(1):
+                for _ in range(1):
                     # Update D256 network
                     _, summary_str = self.sess.run([d_optim_256, self.d_sum_256],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(2):
+                for _ in range(2):
                     # Update G256 network
                     _, summary_str = self.sess.run([g_optim_256, self.g_sum_256],
                                                 feed_dict={ self.real_data: batch_images })
@@ -303,7 +303,7 @@ class pix2pix(object):
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f]" \
                     % (epoch, idx, batch_idxs, time.time() - start_time, 
-                        errD_64, err_128, errD_256, errG_64, errG_128, errG_256))
+                        errD_64, errD_128, errD_256, errG_64, errG_128, errG_256))
 
                 if np.mod(counter, 100) == 1:
                     self.sample_model(args.sample_dir, epoch, idx)
@@ -312,7 +312,7 @@ class pix2pix(object):
                     self.save(args.checkpoint_dir, counter)
 
     def discriminator(self, image, name, size=64, y=None, reuse=False):
-        with tf.variable_scope(name) as scope:
+        with tf.variable_scope(name):
             # image is 256 x 256 x (input_c_dim + output_c_dim)
             if reuse:
                 tf.get_variable_scope().reuse_variables()
@@ -345,14 +345,14 @@ class pix2pix(object):
     def g_64_to_128(self, image):
         s2 = int(self.output_size/2)
         rb1 = self.residual_block(image)
-        rb2 = self.residual_block(rb1, type=1)
+        rb2 = self.residual_block(rb1, type=2)
         rb2 = tf.image.resize_images(rb2, (s2, s2))
         self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
         # d7 is (128 x 128 x self.gf_dim*1*2)
         return tf.nn.tanh(self.d7)
 
     def generator_64_to_128(self, image):
-        with tf.variable_scope("generator") as scope:
+        with tf.variable_scope("generator"):
             return self.g_64_to_128(image)
 
     def g_128_to_256(self, image):
@@ -365,7 +365,7 @@ class pix2pix(object):
         return tf.nn.tanh(self.d8)
 
     def generator_128_to_256(self, image):
-        with tf.variable_scope("generator") as scope:
+        with tf.variable_scope("generator"):
             return self.g_128_to_256(image)
 
     def g_128_to_64(self, image):
@@ -427,7 +427,7 @@ class pix2pix(object):
         return tf.nn.tanh(self.d6)
 
     def generator_128_to_64(self, image):
-        with tf.variable_scope("generator") as scope:
+        with tf.variable_scope("generator"):
             return self.g_128_to_64(image)
 
     def sampler_64(self, image):
