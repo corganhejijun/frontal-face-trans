@@ -10,10 +10,8 @@ from ops import *
 from utils import *
 
 class pix2pix(object):
-    def __init__(self, sess, image_size=256,
-                 batch_size=1, sample_size=1, output_size=256, load_size=286,
-                 gf_dim=64, df_dim=64, L1_lambda=100,
-                 input_c_dim=3, output_c_dim=3, dataset_name='facades',
+    def __init__(self, sess, image_size=256, batch_size=1, sample_size=1, output_size=256, load_size=286,
+                 gf_dim=64, df_dim=64, L1_lambda=100, input_c_dim=3, output_c_dim=3, dataset_name='facades',
                  checkpoint_dir=None, sample_dir=None):
         """
 
@@ -80,8 +78,7 @@ class pix2pix(object):
 
     def build_model(self):
         self.real_data = tf.placeholder(tf.float32,
-                                        [self.batch_size, self.image_size, self.image_size,
-                                         self.input_c_dim + self.output_c_dim],
+                                        [self.batch_size, self.image_size, self.image_size, self.input_c_dim + self.output_c_dim],
                                         name='real_A_and_B_images')
 
         self.real_B_256 = self.real_data[:, :, :, :self.input_c_dim]
@@ -101,12 +98,18 @@ class pix2pix(object):
         self.fake_AB_64 = tf.concat([self.real_A_64, self.fake_B_64], 3)
         self.fake_AB_128 = tf.concat([self.real_A_128, self.fake_B_128], 3)
         self.fake_AB_256 = tf.concat([self.real_A_256, self.fake_B_256], 3)
-        self.D64, self.D_logits64 = self.discriminator_64(self.real_AB_64, reuse=False)
-        self.D128, self.D_logits128 = self.discriminator_128(self.real_AB_128, reuse=False)
-        self.D256, self.D_logits256 = self.discriminator_256(self.real_AB_256, reuse=False)
-        self.D_64, self.D_logits_64 = self.discriminator_64(self.fake_AB_64, reuse=True)
-        self.D_128, self.D_logits_128 = self.discriminator_128(self.fake_AB_128, reuse=True)
-        self.D_256, self.D_logits_256 = self.discriminator_256(self.fake_AB_256, reuse=True)
+        self.BB_64 = tf.concat([self.real_B_64, self.fake_B_64], 3)
+        self.BB_128 = tf.concat([self.real_B_128, self.fake_B_128], 3)
+        self.BB_256 = tf.concat([self.real_B_256, self.fake_B_256], 3)
+        self.D64, self.D_logits64 = self.discriminator(self.real_AB_64, "discriminator_64", reuse=False)
+        self.D128, self.D_logits128 = self.discriminator(self.real_AB_128, "discriminator_128", size=128, reuse=False)
+        self.D256, self.D_logits256 = self.discriminator(self.real_AB_256, "discriminator_256", size=256, reuse=False)
+        self.D_64, self.D_logits_64 = self.discriminator(self.fake_AB_64, "discriminator_64", reuse=True)
+        self.D_128, self.D_logits_128 = self.discriminator(self.fake_AB_128, "discriminator_128", size=128, reuse=True)
+        self.D_256, self.D_logits_256 = self.discriminator(self.fake_AB_256, "discriminator_256", size=256, reuse=True)
+        self.D64_BB, self.D_logits64_BB = self.discriminator(self.BB_64, "discriminator_64_BB")
+        self.D128_BB, self.D_logits128_BB = self.discriminator(self.BB_128, "discriminator_128_BB", size=128)
+        self.D256_BB, self.D_logits256_BB = self.discriminator(self.BB_256, "discriminator_256_BB", size=256)
 
         self.fake_B_sample = self.sampler(self.real_A_128)
         self.fake_B_sample_64 = self.sampler_64(self.real_A_128)
@@ -118,28 +121,30 @@ class pix2pix(object):
         self.d_64_sum = tf.summary.histogram("d_64", self.D_64)
         self.d_128_sum = tf.summary.histogram("d_128", self.D_128)
         self.d_256_sum = tf.summary.histogram("d_256", self.D_256)
+        self.d64_sum_bb = tf.summary.histogram("d64_bb", self.D64_BB)
+        self.d128_sum_bb = tf.summary.histogram("d128_bb", self.D128_BB)
+        self.d256_sum_bb = tf.summary.histogram("d256_bb", self.D256_BB)
         self.fake_B_64_sum = tf.summary.image("fake_B_64", self.fake_B_64)
         self.fake_B_128_sum = tf.summary.image("fake_B_128", self.fake_B_128)
         self.fake_B_256_sum = tf.summary.image("fake_B_256", self.fake_B_256)
 
-        self.d_loss_real_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64, 
-                                                                                    labels=tf.ones_like(self.D64)))
-        self.d_loss_real_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128, 
-                                                                                    labels=tf.ones_like(self.D128)))
-        self.d_loss_real_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256, 
-                                                                                    labels=tf.ones_like(self.D256)))
-        self.d_loss_fake_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, 
-                                                                                        labels=tf.zeros_like(self.D_64)))
-        self.d_loss_fake_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, 
-                                                                                        labels=tf.zeros_like(self.D_128)))
-        self.d_loss_fake_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_256, 
-                                                                                    labels=tf.zeros_like(self.D_256)))
-        self.mask = tf.greater(tf.abs(self.real_B_256 - self.fake_B_256), 0) # only calculate the mean of different part
+        self.d_loss_real_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64, labels=tf.ones_like(self.D64)))
+        self.d_loss_real_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128, labels=tf.ones_like(self.D128)))
+        self.d_loss_real_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256, labels=tf.ones_like(self.D256)))
+        self.d_loss_fake_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.zeros_like(self.D_64)))
+        self.d_loss_fake_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, labels=tf.zeros_like(self.D_128)))
+        self.d_loss_fake_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_256, labels=tf.zeros_like(self.D_256)))
+        self.d_loss_bb_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64_BB, labels=tf.zeros_like(self.D64_BB)))
+        self.d_loss_bb_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128_BB, labels=tf.zeros_like(self.D128_BB)))
+        self.d_loss_bb_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256_BB, labels=tf.zeros_like(self.D256_BB)))
         self.g_loss_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.ones_like(self.D_64))) \
+                        + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64_BB, labels=tf.ones_like(self.D64_BB))) \
                         + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))
         self.g_loss_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_128, labels=tf.ones_like(self.D_128))) \
+                        + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128_BB, labels=tf.ones_like(self.D128_BB))) \
                         + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))
         self.g_loss_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_256, labels=tf.ones_like(self.D_256))) \
+                        + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256_BB, labels=tf.ones_like(self.D256_BB))) \
                         + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256))
 
         self.d_loss_real_64_sum = tf.summary.scalar("d_loss_real_64", self.d_loss_real_64)
@@ -148,10 +153,13 @@ class pix2pix(object):
         self.d_loss_fake_64_sum = tf.summary.scalar("d_loss_fake_64", self.d_loss_fake_64)
         self.d_loss_fake_128_sum = tf.summary.scalar("d_loss_fake_128", self.d_loss_fake_128)
         self.d_loss_fake_256_sum = tf.summary.scalar("d_loss_fake_256", self.d_loss_fake_256)
+        self.d_loss_bb_64_sum = tf.summary.scalar("d_loss_bb_64", self.d_loss_bb_64)
+        self.d_loss_bb_128_sum = tf.summary.scalar("d_loss_bb_128", self.d_loss_bb_128)
+        self.d_loss_bb_256_sum = tf.summary.scalar("d_loss_bb_256", self.d_loss_bb_256)
 
-        self.d_loss_64 = self.d_loss_real_64 + self.d_loss_fake_64
-        self.d_loss_128 = self.d_loss_real_128 + self.d_loss_fake_128
-        self.d_loss_256 = self.d_loss_real_256 + self.d_loss_fake_256
+        self.d_loss_64 = self.d_loss_real_64 + self.d_loss_fake_64 + self.d_loss_bb_64
+        self.d_loss_128 = self.d_loss_real_128 + self.d_loss_fake_128 + self.d_loss_bb_128
+        self.d_loss_256 = self.d_loss_real_256 + self.d_loss_fake_256 + self.d_loss_bb_256
 
         self.g_loss_64_sum = tf.summary.scalar("g_loss_64", self.g_loss_64)
         self.g_loss_128_sum = tf.summary.scalar("g_loss_128", self.g_loss_128)
@@ -201,39 +209,30 @@ class pix2pix(object):
     def sample_model(self, sample_dir, epoch, idx):
         sample_images = self.load_random_samples()
         samples, d_loss, g_loss = self.sess.run(
-            [self.fake_B_sample, self.d_loss_256, self.g_loss_256],
-            feed_dict={self.real_data: sample_images}
+            [self.fake_B_sample, self.d_loss_256, self.g_loss_256], feed_dict={self.real_data: sample_images}
         )
-        save_images(samples, [self.batch_size, 1],
-                    './{}/train_{:02d}_{:04d}.png'.format(sample_dir, epoch, idx))
+        save_images(samples, [self.batch_size, 1], './{}/train_{:02d}_{:04d}.png'.format(sample_dir, epoch, idx))
         print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
 
     def train(self, args):
-        """Train pix2pix"""
-        d_optim_64 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.d_loss_64, var_list=self.d_vars_64)
-        g_optim_64 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.g_loss_64, var_list=self.g_vars_64)
-        d_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.d_loss_128, var_list=self.d_vars_128)
-        g_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.g_loss_128, var_list=self.g_vars_128)
-        d_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.d_loss_256, var_list=self.d_vars_256)
-        g_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.g_loss_256, var_list=self.g_vars_256)
+        d_optim_64 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_64, var_list=self.d_vars_64)
+        g_optim_64 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_64, var_list=self.g_vars_64)
+        d_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_128, var_list=self.d_vars_128)
+        g_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_128, var_list=self.g_vars_128)
+        d_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_256, var_list=self.d_vars_256)
+        g_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_256, var_list=self.g_vars_256)
 
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
 
-        self.g_sum_64 = tf.summary.merge([self.d_64_sum,
-            self.fake_B_64_sum, self.d_loss_fake_64_sum, self.g_loss_64_sum])
+        self.g_sum_64 = tf.summary.merge([self.d_64_sum, self.d64_sum_bb, self.fake_B_64_sum,
+                                            self.d_loss_fake_64_sum, self.d_loss_bb_64_sum, self.g_loss_64_sum])
         self.d_sum_64 = tf.summary.merge([self.d64_sum, self.d_loss_real_64_sum, self.d_loss_64_sum])
-        self.g_sum_128 = tf.summary.merge([self.d_128_sum,
-            self.fake_B_128_sum, self.d_loss_fake_128_sum, self.g_loss_128_sum])
+        self.g_sum_128 = tf.summary.merge([self.d_128_sum, self.d128_sum_bb, self.fake_B_128_sum,
+                                            self.d_loss_fake_128_sum, self.d_loss_bb_128_sum, self.g_loss_128_sum])
         self.d_sum_128 = tf.summary.merge([self.d128_sum, self.d_loss_real_128_sum, self.d_loss_128_sum])
-        self.g_sum_256 = tf.summary.merge([self.d_256_sum,
-            self.fake_B_256_sum, self.d_loss_fake_256_sum, self.g_loss_256_sum])
+        self.g_sum_256 = tf.summary.merge([self.d_256_sum, self.d256_sum_bb, self.fake_B_256_sum,
+                                            self.d_loss_fake_256_sum, self.d_loss_bb_256_sum, self.g_loss_256_sum])
         self.d_sum_256 = tf.summary.merge([self.d256_sum, self.d_loss_real_256_sum, self.d_loss_256_sum])
         self.writer = tf.summary.FileWriter("./logs", self.sess.graph)
 
@@ -257,61 +256,54 @@ class pix2pix(object):
                     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
                 else:
                     batch_images = np.array(batch).astype(np.float32)
-                gen_repeat = 2
-                dis_repeat = 1
 
-                for i in range(dis_repeat):
-                    # Update D network
+                for i in range(5):
+                    # Update D64 network
                     _, summary_str = self.sess.run([d_optim_64, self.d_sum_64],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(gen_repeat):
-                    # Update G network
+                for i in range(10):
+                    # Update G64 network
                     _, summary_str = self.sess.run([g_optim_64, self.g_sum_64],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(dis_repeat):
-                    # Update D network
+                for i in range(3):
+                    # Update D128 network
                     _, summary_str = self.sess.run([d_optim_128, self.d_sum_128],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(gen_repeat):
-                    # Update G network
+                for i in range(6):
+                    # Update G128 network
                     _, summary_str = self.sess.run([g_optim_128, self.g_sum_128],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(dis_repeat):
-                    # Update D network
+                for i in range(1):
+                    # Update D256 network
                     _, summary_str = self.sess.run([d_optim_256, self.d_sum_256],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for i in range(gen_repeat):
-                    # Update G network
+                for i in range(2):
+                    # Update G256 network
                     _, summary_str = self.sess.run([g_optim_256, self.g_sum_256],
                                                 feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                errD_fake_64 = self.d_loss_fake_64.eval({self.real_data: batch_images})
-                errD_fake_128 = self.d_loss_fake_128.eval({self.real_data: batch_images})
-                errD_fake_256 = self.d_loss_fake_256.eval({self.real_data: batch_images})
-                errD_real_64 = self.d_loss_real_64.eval({self.real_data: batch_images})
-                errD_real_128 = self.d_loss_real_128.eval({self.real_data: batch_images})
-                errD_real_256 = self.d_loss_real_256.eval({self.real_data: batch_images})
+                errD_64 = self.d_loss_64.eval({self.real_data: batch_images})
+                errD_128 = self.d_loss_64.eval({self.real_data: batch_images})
+                errD_256 = self.d_loss_64.eval({self.real_data: batch_images})
                 errG_64 = self.g_loss_64.eval({self.real_data: batch_images})
                 errG_128 = self.g_loss_128.eval({self.real_data: batch_images})
                 errG_256 = self.g_loss_256.eval({self.real_data: batch_images})
 
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f]" \
-                    % (epoch, idx, batch_idxs,
-                        time.time() - start_time, 
-                        errD_fake_64+errD_real_64, errD_fake_128+errD_real_128, errD_fake_256+errD_real_256,
-                        errG_64, errG_128, errG_256))
+                    % (epoch, idx, batch_idxs, time.time() - start_time, 
+                        errD_64, err_128, errD_256, errG_64, errG_128, errG_256))
 
                 if np.mod(counter, 100) == 1:
                     self.sample_model(args.sample_dir, epoch, idx)
@@ -319,48 +311,8 @@ class pix2pix(object):
                 if np.mod(counter, 500) == 2:
                     self.save(args.checkpoint_dir, counter)
 
-    def discriminator_64(self, image, y=None, reuse=False):
-
-        with tf.variable_scope("discriminator_64") as scope:
-
-            # image is 64 x 64 x (input_c_dim + output_c_dim)
-            if reuse:
-                tf.get_variable_scope().reuse_variables()
-            else:
-                assert tf.get_variable_scope().reuse == False
-
-            h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv_64'))
-            # h0 is (32 x 32 x self.df_dim)
-            h1 = lrelu(self.d_bn3_64(conv2d(h0, self.df_dim*2, d_h=1, d_w=1, name='d_h1_conv_64')))
-            # h3 is (16 x 16 x self.df_dim*8)
-            h2 = linear(tf.reshape(h1, [self.batch_size, -1]), 1, 'd_h1_lin_64')
-
-            return tf.nn.sigmoid(h2), h2
-
-    def discriminator_128(self, image, y=None, reuse=False):
-
-        with tf.variable_scope("discriminator_128") as scope:
-
-            # image is 128 x 128 x (input_c_dim + output_c_dim)
-            if reuse:
-                tf.get_variable_scope().reuse_variables()
-            else:
-                assert tf.get_variable_scope().reuse == False
-
-            h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv_128'))
-            # h0 is (64 x 64 x self.df_dim)
-            h1 = lrelu(self.d_bn2_128(conv2d(h0, self.df_dim*2, name='d_h1_conv_128')))
-            # h2 is (32x 32 x self.df_dim*4)
-            h2 = lrelu(self.d_bn3_128(conv2d(h1, self.df_dim*4, d_h=1, d_w=1, name='d_h2_conv_128')))
-            # h3 is (16 x 16 x self.df_dim*8)
-            h3 = linear(tf.reshape(h2, [self.batch_size, -1]), 1, 'd_h2_lin_128')
-
-            return tf.nn.sigmoid(h3), h3
-
-    def discriminator_256(self, image, y=None, reuse=False):
-
-        with tf.variable_scope("discriminator_256") as scope:
-
+    def discriminator(self, image, name, size=64, y=None, reuse=False):
+        with tf.variable_scope(name) as scope:
             # image is 256 x 256 x (input_c_dim + output_c_dim)
             if reuse:
                 tf.get_variable_scope().reuse_variables()
@@ -372,329 +324,131 @@ class pix2pix(object):
             h1 = lrelu(self.d_bn1_256(conv2d(h0, self.df_dim*2, name='d_h1_conv_256')))
             # h1 is (64 x 64 x self.df_dim*2)
             h2 = lrelu(self.d_bn2_256(conv2d(h1, self.df_dim*4, name='d_h2_conv_256')))
+            h = h2
             # h2 is (32x 32 x self.df_dim*4)
-            h3 = lrelu(self.d_bn3_256(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv_256')))
-            # h3 is (16 x 16 x self.df_dim*8)
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin_256')
-
-            return tf.nn.sigmoid(h4), h4
-
-    def residual_block_1_128(self, image):
-        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_128_conv_rb1_1')
+            if size >= 128:
+                h3 = lrelu(self.d_bn3_256(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv_256')))
+                # h3 is (16 x 16 x self.df_dim*8)
+                h = h3
+            if size == 256:
+                h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin_256')
+                h = h4
+            return tf.nn.sigmoid(h), h
+            
+    def residual_block(self, image, size=128, type=1):
+        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_1')
         rb1 = tf.nn.relu(rb1)
-        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_128_conv_rb1_2')
-        rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb1')
+        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_2')
+        rb_sum = tf.add(image, rb2, name='g_rb_' + str(size) + '_add_rb' + str(type))
         return tf.nn.relu(rb_sum)
 
-    def residual_block_2_128(self, image):
-        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_128_conv_rb2_1')
-        rb1 = tf.nn.relu(rb1)
-        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_128_conv_rb2_2')
-        rb_sum = tf.add(image, rb2, name='g_rb_128_add_rb2')
-        return tf.nn.relu(rb_sum)
+    def g_64_to_128(self, image):
+        s2 = int(self.output_size/2)
+        rb1 = self.residual_block(image)
+        rb2 = self.residual_block(rb1, type=1)
+        rb2 = tf.image.resize_images(rb2, (s2, s2))
+        self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
+        # d7 is (128 x 128 x self.gf_dim*1*2)
+        return tf.nn.tanh(self.d7)
 
-    def generator_64_to_128(self, image, y=None):
+    def generator_64_to_128(self, image):
         with tf.variable_scope("generator") as scope:
-            s2 = int(self.output_size/2)
-            rb1 = self.residual_block_1_128(image)
-            rb2 = self.residual_block_2_128(rb1)
-            rb2 = tf.image.resize_images(rb2, (s2, s2))
-            self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
-            # d7 is (128 x 128 x self.gf_dim*1*2)
-            return tf.nn.tanh(self.d7)
+            return self.g_64_to_128(image)
 
-    def residual_block_1_256(self, image):
-        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb1_1')
-        rb1 = tf.nn.relu(rb1)
-        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_256_conv_rb1_2')
-        rb_sum = tf.add(image, rb2, name='g_rb_256_add_rb1')
-        return tf.nn.relu(rb_sum)
+    def g_128_to_256(self, image):
+        s = self.output_size
+        rb1 = self.residual_block(image, size=256, type=1)
+        rb2 = self.residual_block(rb1, size=256, type=2)
+        rb2 = tf.image.resize_images(rb2, (s, s))
+        self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
+        # d8 is (256 x 256 x output_c_dim)
+        return tf.nn.tanh(self.d8)
 
-    def residual_block_2_256(self, image):
-        rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_256_conv_rb2_1')
-        rb1 = tf.nn.relu(rb1)
-        rb2 = conv2d(rb1, self.output_c_dim, d_h=1, d_w=1, name='g_rb_256_conv_rb2_2')
-        rb_sum = tf.add(image, rb2, name='g_rb_256_add_rb2')
-        return tf.nn.relu(rb_sum)
-
-    def generator_128_to_256(self, image, y=None):
+    def generator_128_to_256(self, image):
         with tf.variable_scope("generator") as scope:
-            s = self.output_size
-            rb1 = self.residual_block_1_256(image)
-            rb2 = self.residual_block_2_256(rb1)
-            rb2 = tf.image.resize_images(rb2, (s, s))
-            self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
-            # d8 is (256 x 256 x output_c_dim)
-            return tf.nn.tanh(self.d8)
+            return self.g_128_to_256(image)
 
-    def generator_128_to_64(self, image, y=None):
+    def g_128_to_64(self, image):
+        s = self.output_size
+        s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
+
+        # image is (128 x 128 x input_c_dim)
+        e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
+        # e1 is (64 x 64 x self.gf_dim)
+        e2 = self.g_bn_e2_64(conv2d(lrelu(e1), self.gf_dim*2, name='g_e2_conv_64'))
+        # e2 is (32 x 32 x self.gf_dim*2)
+        e3 = self.g_bn_e3_64(conv2d(lrelu(e2), self.gf_dim*4, name='g_e3_conv_64'))
+        # e3 is (16 x 16 x self.gf_dim*4)
+        e4 = self.g_bn_e4_64(conv2d(lrelu(e3), self.gf_dim*8, name='g_e4_conv_64'))
+        # e4 is (8 x 8 x self.gf_dim*8)
+        e5 = self.g_bn_e5_64(conv2d(lrelu(e4), self.gf_dim*8, name='g_e5_conv_64'))
+        # e5 is (4 x 4 x self.gf_dim*8)
+        e6 = self.g_bn_e6_64(conv2d(lrelu(e5), self.gf_dim*8, name='g_e6_conv_64'))
+        # e6 is (2 x 2 x self.gf_dim*8)
+        e7 = self.g_bn_e7_64(conv2d(lrelu(e6), self.gf_dim*8, name='g_e7_conv_64'))
+        # e7 is (1 x 1 x self.gf_dim*8)
+
+        self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
+            [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
+        d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
+        d1 = tf.concat([d1, e6], 3)
+        # d1 is (2 x 2 x self.gf_dim*8*2)
+
+        self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
+            [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
+        d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
+        d2 = tf.concat([d2, e5], 3)
+        # d2 is (4 x 4 x self.gf_dim*8*2)
+
+        self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
+            [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
+        d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
+        d3 = tf.concat([d3, e4], 3)
+        # d3 is (8 x 8 x self.gf_dim*8*2)
+
+        self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
+            [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
+        d4 = self.g_bn_d4_64(self.d4)
+        d4 = tf.concat([d4, e3], 3)
+        # d4 is (16 x 16 x self.gf_dim*8*2)
+
+        self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
+            [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
+        d5 = self.g_bn_d5_64(self.d5)
+        d5 = tf.concat([d5, e2], 3)
+        # d5 is (32 x 32 x self.gf_dim*4*2)
+
+        self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
+            [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
+        # d6 is (64 x 64 x self.gf_dim*2*2)
+        self.d6_2 = self.g_bn_d6_64(self.d6)
+        self.d6_2 = tf.concat([self.d6_2, e1], 3)
+
+        return tf.nn.tanh(self.d6)
+
+    def generator_128_to_64(self, image):
         with tf.variable_scope("generator") as scope:
+            return self.g_128_to_64(image)
 
-            s = self.output_size
-            s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
-
-            # image is (128 x 128 x input_c_dim)
-            e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
-            # e1 is (64 x 64 x self.gf_dim)
-            e2 = self.g_bn_e2_64(conv2d(lrelu(e1), self.gf_dim*2, name='g_e2_conv_64'))
-            # e2 is (32 x 32 x self.gf_dim*2)
-            e3 = self.g_bn_e3_64(conv2d(lrelu(e2), self.gf_dim*4, name='g_e3_conv_64'))
-            # e3 is (16 x 16 x self.gf_dim*4)
-            e4 = self.g_bn_e4_64(conv2d(lrelu(e3), self.gf_dim*8, name='g_e4_conv_64'))
-            # e4 is (8 x 8 x self.gf_dim*8)
-            e5 = self.g_bn_e5_64(conv2d(lrelu(e4), self.gf_dim*8, name='g_e5_conv_64'))
-            # e5 is (4 x 4 x self.gf_dim*8)
-            e6 = self.g_bn_e6_64(conv2d(lrelu(e5), self.gf_dim*8, name='g_e6_conv_64'))
-            # e6 is (2 x 2 x self.gf_dim*8)
-            e7 = self.g_bn_e7_64(conv2d(lrelu(e6), self.gf_dim*8, name='g_e7_conv_64'))
-            # e7 is (1 x 1 x self.gf_dim*8)
-
-            self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
-                [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
-            d1 = tf.concat([d1, e6], 3)
-            # d1 is (2 x 2 x self.gf_dim*8*2)
-
-            self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
-                [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
-            d2 = tf.concat([d2, e5], 3)
-            # d2 is (4 x 4 x self.gf_dim*8*2)
-
-            self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
-                [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
-            d3 = tf.concat([d3, e4], 3)
-            # d3 is (8 x 8 x self.gf_dim*8*2)
-
-            self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
-                [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
-            d4 = self.g_bn_d4_64(self.d4)
-            d4 = tf.concat([d4, e3], 3)
-            # d4 is (16 x 16 x self.gf_dim*8*2)
-
-            self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
-                [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
-            d5 = self.g_bn_d5_64(self.d5)
-            d5 = tf.concat([d5, e2], 3)
-            # d5 is (32 x 32 x self.gf_dim*4*2)
-
-            self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
-                [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
-            # d6 is (64 x 64 x self.gf_dim*2*2)
-            self.d6_2 = self.g_bn_d6_64(self.d6)
-            self.d6_2 = tf.concat([self.d6_2, e1], 3)
-
-            return tf.nn.tanh(self.d6)
-
-    def sampler(self, image, y=None):
-
+    def sampler_64(self, image):
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
-
-            s = self.output_size
-            s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
-
-            # image is (128 x 128 x input_c_dim)
-            e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
-            # e1 is (64 x 64 x self.gf_dim)
-            e2 = self.g_bn_e2_64(conv2d(lrelu(e1), self.gf_dim*2, name='g_e2_conv_64'))
-            # e2 is (32 x 32 x self.gf_dim*2)
-            e3 = self.g_bn_e3_64(conv2d(lrelu(e2), self.gf_dim*4, name='g_e3_conv_64'))
-            # e3 is (16 x 16 x self.gf_dim*4)
-            e4 = self.g_bn_e4_64(conv2d(lrelu(e3), self.gf_dim*8, name='g_e4_conv_64'))
-            # e4 is (8 x 8 x self.gf_dim*8)
-            e5 = self.g_bn_e5_64(conv2d(lrelu(e4), self.gf_dim*8, name='g_e5_conv_64'))
-            # e5 is (4 x 4 x self.gf_dim*8)
-            e6 = self.g_bn_e6_64(conv2d(lrelu(e5), self.gf_dim*8, name='g_e6_conv_64'))
-            # e6 is (2 x 2 x self.gf_dim*8)
-            e7 = self.g_bn_e7_64(conv2d(lrelu(e6), self.gf_dim*8, name='g_e7_conv_64'))
-            # e7 is (1 x 1 x self.gf_dim*8)
-
-            self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
-                [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
-            d1 = tf.concat([d1, e6], 3)
-            # d1 is (2 x 2 x self.gf_dim*8*2)
-
-            self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
-                [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
-            d2 = tf.concat([d2, e5], 3)
-            # d2 is (4 x 4 x self.gf_dim*8*2)
-
-            self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
-                [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
-            d3 = tf.concat([d3, e4], 3)
-            # d3 is (8 x 8 x self.gf_dim*8*2)
-
-            self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
-                [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
-            d4 = self.g_bn_d4_64(self.d4)
-            d4 = tf.concat([d4, e3], 3)
-            # d4 is (16 x 16 x self.gf_dim*8*2)
-
-            self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
-                [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
-            d5 = self.g_bn_d5_64(self.d5)
-            d5 = tf.concat([d5, e2], 3)
-            # d5 is (32 x 32 x self.gf_dim*4*2)
-
-            self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
-                [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
-            # d6 is (64 x 64 x self.gf_dim*2*2)
-            self.d6_2 = self.g_bn_d6_64(self.d6)
-            self.d6_2 = tf.concat([self.d6_2, e1], 3)
-
-            out_64 = tf.nn.tanh(self.d6)
-
-            # 64 to 128
-            s2 = int(s/2)
-            rb1 = self.residual_block_1_128(out_64)
-            rb2 = self.residual_block_2_128(rb1)
-            rb2 = tf.image.resize_images(rb2, (s2, s2))
-            self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
-            # d7 is (128 x 128 x self.gf_dim*1*2)
-            out_128 = tf.nn.tanh(self.d7)
-
-            # 128 to 256
-            rb1 = self.residual_block_1_256(out_128)
-            rb2 = self.residual_block_2_256(rb1)
-            rb2 = tf.image.resize_images(rb2, (s, s))
-            self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d8_256')
-            # d8 is (256 x 256 x output_c_dim)
-            return tf.nn.tanh(self.d8)
-            
-
-    def sampler_64(self, image, y=None):
-
-        with tf.variable_scope("generator") as scope:
-            scope.reuse_variables()
-
-            s = self.output_size
-            s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
-
-            # image is (128 x 128 x input_c_dim)
-            e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
-            # e1 is (64 x 64 x self.gf_dim)
-            e2 = self.g_bn_e2_64(conv2d(lrelu(e1), self.gf_dim*2, name='g_e2_conv_64'))
-            # e2 is (32 x 32 x self.gf_dim*2)
-            e3 = self.g_bn_e3_64(conv2d(lrelu(e2), self.gf_dim*4, name='g_e3_conv_64'))
-            # e3 is (16 x 16 x self.gf_dim*4)
-            e4 = self.g_bn_e4_64(conv2d(lrelu(e3), self.gf_dim*8, name='g_e4_conv_64'))
-            # e4 is (8 x 8 x self.gf_dim*8)
-            e5 = self.g_bn_e5_64(conv2d(lrelu(e4), self.gf_dim*8, name='g_e5_conv_64'))
-            # e5 is (4 x 4 x self.gf_dim*8)
-            e6 = self.g_bn_e6_64(conv2d(lrelu(e5), self.gf_dim*8, name='g_e6_conv_64'))
-            # e6 is (2 x 2 x self.gf_dim*8)
-            e7 = self.g_bn_e7_64(conv2d(lrelu(e6), self.gf_dim*8, name='g_e7_conv_64'))
-            # e7 is (1 x 1 x self.gf_dim*8)
-
-            self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
-                [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
-            d1 = tf.concat([d1, e6], 3)
-            # d1 is (2 x 2 x self.gf_dim*8*2)
-
-            self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
-                [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
-            d2 = tf.concat([d2, e5], 3)
-            # d2 is (4 x 4 x self.gf_dim*8*2)
-
-            self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
-                [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
-            d3 = tf.concat([d3, e4], 3)
-            # d3 is (8 x 8 x self.gf_dim*8*2)
-
-            self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
-                [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
-            d4 = self.g_bn_d4_64(self.d4)
-            d4 = tf.concat([d4, e3], 3)
-            # d4 is (16 x 16 x self.gf_dim*8*2)
-
-            self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
-                [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
-            d5 = self.g_bn_d5_64(self.d5)
-            d5 = tf.concat([d5, e2], 3)
-            # d5 is (32 x 32 x self.gf_dim*4*2)
-
-            self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
-                [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
-            # d6 is (64 x 64 x self.gf_dim*2*2)
-
-            return tf.nn.tanh(self.d6)
-            
+            return self.g_128_to_64(image)
 
     def sampler_128(self, image, y=None):
+        out_64 = self.sampler_64(image)
 
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
+            return self.g_64_to_128(out_64)
+            
+    def sampler(self, image, y=None):
+        out_64 = self.sampler_64(image)
+        out_128 = self.sampler_128(out_64)
 
-            s = self.output_size
-            s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
-
-            # image is (128 x 128 x input_c_dim)
-            e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
-            # e1 is (64 x 64 x self.gf_dim)
-            e2 = self.g_bn_e2_64(conv2d(lrelu(e1), self.gf_dim*2, name='g_e2_conv_64'))
-            # e2 is (32 x 32 x self.gf_dim*2)
-            e3 = self.g_bn_e3_64(conv2d(lrelu(e2), self.gf_dim*4, name='g_e3_conv_64'))
-            # e3 is (16 x 16 x self.gf_dim*4)
-            e4 = self.g_bn_e4_64(conv2d(lrelu(e3), self.gf_dim*8, name='g_e4_conv_64'))
-            # e4 is (8 x 8 x self.gf_dim*8)
-            e5 = self.g_bn_e5_64(conv2d(lrelu(e4), self.gf_dim*8, name='g_e5_conv_64'))
-            # e5 is (4 x 4 x self.gf_dim*8)
-            e6 = self.g_bn_e6_64(conv2d(lrelu(e5), self.gf_dim*8, name='g_e6_conv_64'))
-            # e6 is (2 x 2 x self.gf_dim*8)
-            e7 = self.g_bn_e7_64(conv2d(lrelu(e6), self.gf_dim*8, name='g_e7_conv_64'))
-            # e7 is (1 x 1 x self.gf_dim*8)
-
-            self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
-                [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
-            d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
-            d1 = tf.concat([d1, e6], 3)
-            # d1 is (2 x 2 x self.gf_dim*8*2)
-
-            self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
-                [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
-            d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
-            d2 = tf.concat([d2, e5], 3)
-            # d2 is (4 x 4 x self.gf_dim*8*2)
-
-            self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
-                [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
-            d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
-            d3 = tf.concat([d3, e4], 3)
-            # d3 is (8 x 8 x self.gf_dim*8*2)
-
-            self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
-                [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
-            d4 = self.g_bn_d4_64(self.d4)
-            d4 = tf.concat([d4, e3], 3)
-            # d4 is (16 x 16 x self.gf_dim*8*2)
-
-            self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
-                [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
-            d5 = self.g_bn_d5_64(self.d5)
-            d5 = tf.concat([d5, e2], 3)
-            # d5 is (32 x 32 x self.gf_dim*4*2)
-
-            self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
-                [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
-            # d6 is (64 x 64 x self.gf_dim*2*2)
-
-            out_64 = tf.nn.tanh(self.d6)
-
-            s2 = int(s/2)
-            rb1 = self.residual_block_1_128(out_64)
-            rb2 = self.residual_block_2_128(rb1)
-            rb2 = tf.image.resize_images(rb2, (s2, s2))
-            self.d7  = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d7_128')
-            # d7 is (128 x 128 x self.gf_dim*1*2)
-            return tf.nn.tanh(self.d7)
+        with tf.variable_scope("generator") as scope:
+            scope.reuse_variables()
+            return self.g_128_to_256(out_128)
 
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
