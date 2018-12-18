@@ -14,7 +14,6 @@ class pix2pix(object):
                  gf_dim=64, df_dim=64, L1_lambda=100, input_c_dim=3, output_c_dim=3, dataset_name='facades',
                  checkpoint_dir=None, sample_dir=None):
         """
-
         Args:
             sess: TensorFlow session
             batch_size: The size of batch. Should be specified before training.
@@ -78,8 +77,8 @@ class pix2pix(object):
 
     def build_model(self):
         self.real_data = tf.placeholder(tf.float32,
-                                        [self.batch_size, self.image_size, self.image_size, self.input_c_dim + self.output_c_dim],
-                                        name='real_A_and_B_images')
+                [self.batch_size, self.image_size, self.image_size, self.input_c_dim + self.output_c_dim],
+                name='real_A_and_B_images')
 
         self.real_B_256 = self.real_data[:, :, :, :self.input_c_dim]
         self.real_B_64 = tf.image.resize_images(self.real_B_256, (int(self.image_size / 4), int(self.image_size / 4)))
@@ -126,12 +125,12 @@ class pix2pix(object):
         self.d_loss_bb_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128_BB, labels=tf.zeros_like(self.D128_BB)))
         self.d_loss_bb_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256_BB, labels=tf.zeros_like(self.D256_BB)))
         self.g_loss_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.ones_like(self.D_64))) \
-                        + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64_BB, labels=tf.ones_like(self.D64_BB))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))
+                + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64_BB, labels=tf.ones_like(self.D64_BB))) \
+                + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))
         self.g_loss_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128_BB, labels=tf.ones_like(self.D128_BB))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))
+                + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))
         self.g_loss_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256_BB, labels=tf.ones_like(self.D256_BB))) \
-                        + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256))
+                + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256))
 
         self.d_loss_real_64_sum = tf.summary.scalar("d_loss_real_64", self.d_loss_real_64)
         self.d_loss_fake_64_sum = tf.summary.scalar("d_loss_fake_64", self.d_loss_fake_64)
@@ -177,11 +176,9 @@ class pix2pix(object):
 
         self.saver = tf.train.Saver()
 
-
     def load_random_samples(self):
         data = np.random.choice(glob('./datasets/{}/val/*.jpg'.format(self.dataset_name)), self.batch_size)
         sample = [load_data(sample_file, self.image_size, self.load_size) for sample_file in data]
-
         if (self.is_grayscale):
             sample_images = np.array(sample).astype(np.float32)[:, :, :, None]
         else:
@@ -208,7 +205,7 @@ class pix2pix(object):
         self.sess.run(init_op)
 
         self.g_sum_64 = tf.summary.merge([self.d_64_sum, self.d64_sum_bb, self.fake_B_64_sum,
-                                            self.d_loss_fake_64_sum, self.d_loss_bb_64_sum, self.g_loss_64_sum])
+                self.d_loss_fake_64_sum, self.d_loss_bb_64_sum, self.g_loss_64_sum])
         self.d_sum_64 = tf.summary.merge([self.d64_sum, self.d_loss_real_64_sum, self.d_loss_64_sum])
         self.g_sum_128 = tf.summary.merge([self.d128_sum_bb, self.fake_B_128_sum, self.d_loss_bb_128_sum, self.g_loss_128_sum])
         self.d_sum_128 = tf.summary.merge([self.d_loss_128_sum])
@@ -227,6 +224,7 @@ class pix2pix(object):
         for epoch in xrange(args.epoch):
             data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
+            # only use train_size images from total data
             batch_idxs = min(len(data), args.train_size) // self.batch_size
 
             for idx in xrange(0, batch_idxs):
@@ -239,38 +237,32 @@ class pix2pix(object):
 
                 for _ in range(5):
                     # Update D64 network
-                    _, summary_str = self.sess.run([d_optim_64, self.d_sum_64],
-                                                feed_dict={ self.real_data: batch_images })
+                    _, summary_str = self.sess.run([d_optim_64, self.d_sum_64], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
                 for _ in range(10):
                     # Update G64 network
-                    _, summary_str = self.sess.run([g_optim_64, self.g_sum_64],
-                                                feed_dict={ self.real_data: batch_images })
+                    _, summary_str = self.sess.run([g_optim_64, self.g_sum_64], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
                 for _ in range(3):
                     # Update D128 network
-                    _, summary_str = self.sess.run([d_optim_128, self.d_sum_128],
-                                                feed_dict={ self.real_data: batch_images })
+                    _, summary_str = self.sess.run([d_optim_128, self.d_sum_128], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
                 for _ in range(6):
                     # Update G128 network
-                    _, summary_str = self.sess.run([g_optim_128, self.g_sum_128],
-                                                feed_dict={ self.real_data: batch_images })
+                    _, summary_str = self.sess.run([g_optim_128, self.g_sum_128], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
                 for _ in range(1):
                     # Update D256 network
-                    _, summary_str = self.sess.run([d_optim_256, self.d_sum_256],
-                                                feed_dict={ self.real_data: batch_images })
+                    _, summary_str = self.sess.run([d_optim_256, self.d_sum_256], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
                 for _ in range(2):
                     # Update G256 network
-                    _, summary_str = self.sess.run([g_optim_256, self.g_sum_256],
-                                                feed_dict={ self.real_data: batch_images })
+                    _, summary_str = self.sess.run([g_optim_256, self.g_sum_256], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
                 errD_64 = self.d_loss_64.eval({self.real_data: batch_images})
@@ -282,8 +274,8 @@ class pix2pix(object):
 
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f]" \
-                    % (epoch, idx, batch_idxs, time.time() - start_time, 
-                        errD_64, errD_128, errD_256, errG_64, errG_128, errG_256))
+                        % (epoch, idx, batch_idxs, time.time() - start_time, 
+                                errD_64, errD_128, errD_256, errG_64, errG_128, errG_256))
 
                 if np.mod(counter, 100) == 1:
                     self.sample_model(args.sample_dir, epoch, idx)
@@ -437,9 +429,7 @@ class pix2pix(object):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-        self.saver.save(self.sess,
-                        os.path.join(checkpoint_dir, model_name),
-                        global_step=step)
+        self.saver.save(self.sess, os.path.join(checkpoint_dir, model_name), global_step=step)
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoint...")
@@ -499,21 +489,11 @@ class pix2pix(object):
                 idx = i
                 fileName = sample_files[idx].split('/')[-1].split('.jpg')[0]
                 print("sampling image {}, {} of total {}".format(fileName, idx + (batch_count - 1) * max_size, len(sample_files_all)))
-                samples = self.sess.run(
-                    self.fake_B_sample,
-                    feed_dict={self.real_data: sample_image}
-                )
-                save_images(samples, [self.batch_size, 1],
-                            './{}/{}.png'.format(args.test_dir, fileName))
-                samples = self.sess.run(
-                    self.fake_B_sample_64,
-                    feed_dict={self.real_data: sample_image}
-                )
-                save_images(samples, [self.batch_size, 1],
-                            './{}_64/{}.png'.format(args.test_dir, fileName))
-                samples = self.sess.run(
-                    self.fake_B_sample_128,
-                    feed_dict={self.real_data: sample_image}
-                )
-                save_images(samples, [self.batch_size, 1],
-                            './{}_128/{}.png'.format(args.test_dir, fileName))
+                samples = self.sess.run(self.fake_B_sample, feed_dict={self.real_data: sample_image})
+                save_images(samples, [self.batch_size, 1], './{}/{}.png'.format(args.test_dir, fileName))
+
+                samples = self.sess.run(self.fake_B_sample_64, feed_dict={self.real_data: sample_image})
+                save_images(samples, [self.batch_size, 1], './{}_64/{}.png'.format(args.test_dir, fileName))
+
+                samples = self.sess.run(self.fake_B_sample_128, feed_dict={self.real_data: sample_image})
+                save_images(samples, [self.batch_size, 1], './{}_128/{}.png'.format(args.test_dir, fileName))
