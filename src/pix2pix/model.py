@@ -41,10 +41,7 @@ class pix2pix(object):
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1_256 = batch_norm(name='d_bn1_256')
-        self.d_bn2_128 = batch_norm(name='d_bn2_128')
         self.d_bn2_256 = batch_norm(name='d_bn2_256')
-        self.d_bn3_64 = batch_norm(name='d_bn3_64')
-        self.d_bn3_128 = batch_norm(name='d_bn3_128')
         self.d_bn3_256 = batch_norm(name='d_bn3_256')
 
         self.g_bn_e2_64 = batch_norm(name='g_bn_e2_64')
@@ -60,16 +57,6 @@ class pix2pix(object):
         self.g_bn_d4_64 = batch_norm(name='g_bn_d4_64')
         self.g_bn_d5_64 = batch_norm(name='g_bn_d5_64')
         self.g_bn_d6_64 = batch_norm(name='g_bn_d6_64')
-        self.g_bn_d7_128 = batch_norm(name='g_bn_d7_128')
-
-        self.g_bn_rb1_1_128 = batch_norm(name='g_bn_rb1_1_128')
-        self.g_bn_rb1_2_128 = batch_norm(name='g_bn_rb1_2_128')
-        self.g_bn_rb2_1_128 = batch_norm(name='g_bn_rb2_1_128')
-        self.g_bn_rb2_2_128 = batch_norm(name='g_bn_rb2_2_128')
-        self.g_bn_rb1_1_256 = batch_norm(name='g_bn_rb1_1_256')
-        self.g_bn_rb1_2_256 = batch_norm(name='g_bn_rb1_2_256')
-        self.g_bn_rb2_1_256 = batch_norm(name='g_bn_rb2_1_256')
-        self.g_bn_rb2_2_256 = batch_norm(name='g_bn_rb2_2_256')
 
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
@@ -92,11 +79,7 @@ class pix2pix(object):
         self.fake_B_256 = self.generator_128_to_256(self.fake_B_128)
 
         self.real_AB_64 = tf.concat([self.real_A_64, self.real_B_64], 3)
-        self.real_AB_128 = tf.concat([self.real_A_128, self.real_B_128], 3)
-        self.real_AB_256 = tf.concat([self.real_A_256, self.real_B_256], 3)
         self.fake_AB_64 = tf.concat([self.real_A_64, self.fake_B_64], 3)
-        self.fake_AB_128 = tf.concat([self.real_A_128, self.fake_B_128], 3)
-        self.fake_AB_256 = tf.concat([self.real_A_256, self.fake_B_256], 3)
         self.BB_64 = tf.concat([self.real_B_64, self.fake_B_64], 3)
         self.BB_128 = tf.concat([self.real_B_128, self.fake_B_128], 3)
         self.BB_256 = tf.concat([self.real_B_256, self.fake_B_256], 3)
@@ -235,22 +218,22 @@ class pix2pix(object):
                 else:
                     batch_images = np.array(batch).astype(np.float32)
 
-                for _ in range(5):
+                for _ in range(2):
                     # Update D64 network
                     _, summary_str = self.sess.run([d_optim_64, self.d_sum_64], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(10):
+                for _ in range(4):
                     # Update G64 network
                     _, summary_str = self.sess.run([g_optim_64, self.g_sum_64], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(3):
+                for _ in range(1):
                     # Update D128 network
                     _, summary_str = self.sess.run([d_optim_128, self.d_sum_128], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(6):
+                for _ in range(2):
                     # Update G128 network
                     _, summary_str = self.sess.run([g_optim_128, self.g_sum_128], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
@@ -285,27 +268,27 @@ class pix2pix(object):
 
     def discriminator(self, image, name, size=64, y=None, reuse=False):
         with tf.variable_scope(name):
-            # image is 256 x 256 x (input_c_dim + output_c_dim)
             if reuse:
                 tf.get_variable_scope().reuse_variables()
             else:
                 assert tf.get_variable_scope().reuse == False
-
+            # for        image->h0-> h1->h2->h3->h4
+            #     256x256: 256->128->64->32->16->re
+            #     128x128: 128-> 64->32->16->re
+            #     64x64:    64-> 32->16->re
             h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv_256'))
-            # h0 is (128 x 128 x self.df_dim)
             h1 = lrelu(self.d_bn1_256(conv2d(h0, self.df_dim*2, name='d_h1_conv_256')))
-            # h1 is (64 x 64 x self.df_dim*2)
-            h2 = lrelu(self.d_bn2_256(conv2d(h1, self.df_dim*4, name='d_h2_conv_256')))
-            h = h2
-            # h2 is (32x 32 x self.df_dim*4)
-            if size >= 128:
-                h3 = lrelu(self.d_bn3_256(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv_256')))
-                # h3 is (16 x 16 x self.df_dim*8)
-                h = h3
-            if size == 256:
-                h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin_256')
-                h = h4
-            return tf.nn.sigmoid(h), h
+            if size == 64:
+                h2 = linear(tf.reshape(h1, [self.batch_size, -1]), 1, 'd_h1_lin_64')
+                return tf.nn.sigmoid(h2), h2
+            if size > 64:
+                h2 = lrelu(self.d_bn2_256(conv2d(h1, self.df_dim*4, name='d_h2_conv_256')))
+            if size == 128:
+                h3 = linear(tf.reshape(h2, [self.batch_size, -1]), 1, 'd_h2_lin_128')
+                return tf.nn.sigmoid(h3), h3
+            h3 = lrelu(self.d_bn3_256(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv_256')))
+            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin_256')
+            return tf.nn.sigmoid(h4), h4
             
     def residual_block(self, image, size=128, type=1):
         rb1 = conv2d(image, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_1')
@@ -393,8 +376,6 @@ class pix2pix(object):
         self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
             [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64', with_w=True)
         # d6 is (64 x 64 x self.gf_dim*2*2)
-        self.d6_2 = self.g_bn_d6_64(self.d6)
-        self.d6_2 = tf.concat([self.d6_2, e1], 3)
 
         return tf.nn.tanh(self.d6)
 
