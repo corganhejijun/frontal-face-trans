@@ -40,10 +40,10 @@ class pix2pix(object):
         self.L1_lambda = L1_lambda
 
         # batch normalization : deals with poor initialization helps gradient flow
-        self.d_bn1 = batch_norm(name='d_bn1_256')
-        self.d_bn2 = batch_norm(name='d_bn2_256')
-        self.d_bn3 = batch_norm(name='d_bn3_256')
-        self.d_bn4 = batch_norm(name='d_bn4_256')
+        self.d_bn1 = batch_norm(name='d_bn1')
+        self.d_bn2 = batch_norm(name='d_bn2')
+        self.d_bn3 = batch_norm(name='d_bn3')
+        self.d_bn4 = batch_norm(name='d_bn4')
 
         self.g_bn_e2_64 = batch_norm(name='g_bn_e2_64')
         self.g_bn_e3_64 = batch_norm(name='g_bn_e3_64')
@@ -57,7 +57,6 @@ class pix2pix(object):
         self.g_bn_d3_64 = batch_norm(name='g_bn_d3_64')
         self.g_bn_d4_64 = batch_norm(name='g_bn_d4_64')
         self.g_bn_d5_64 = batch_norm(name='g_bn_d5_64')
-        self.g_bn_d6_64 = batch_norm(name='g_bn_d6_64')
 
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
