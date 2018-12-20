@@ -40,9 +40,10 @@ class pix2pix(object):
         self.L1_lambda = L1_lambda
 
         # batch normalization : deals with poor initialization helps gradient flow
-        self.d_bn1_256 = batch_norm(name='d_bn1_256')
-        self.d_bn2_256 = batch_norm(name='d_bn2_256')
-        self.d_bn3_256 = batch_norm(name='d_bn3_256')
+        self.d_bn1 = batch_norm(name='d_bn1_256')
+        self.d_bn2 = batch_norm(name='d_bn2_256')
+        self.d_bn3 = batch_norm(name='d_bn3_256')
+        self.d_bn4 = batch_norm(name='d_bn4_256')
 
         self.g_bn_e2_64 = batch_norm(name='g_bn_e2_64')
         self.g_bn_e3_64 = batch_norm(name='g_bn_e3_64')
@@ -273,21 +274,19 @@ class pix2pix(object):
             else:
                 assert tf.get_variable_scope().reuse == False
             # for        image->h0-> h1->h2->h3->h4
-            #     256x256: 256->128->64->32->16->re
-            #     128x128: 128-> 64->32->16->re
-            #     64x64:    64-> 32->16->re
-            h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv_256'))
-            h1 = lrelu(self.d_bn1_256(conv2d(h0, self.df_dim*2, name='d_h1_conv_256')))
+            #     256x256: 256->128->64->32->16->8
+            #     128x128: 128-> 64->32->16->8
+            #     64x64:    64-> 32->16->8
+            h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
+            h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
+            h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
             if size == 64:
-                h2 = linear(tf.reshape(h1, [self.batch_size, -1]), 1, 'd_h1_lin_64')
                 return tf.nn.sigmoid(h2), h2
             if size > 64:
-                h2 = lrelu(self.d_bn2_256(conv2d(h1, self.df_dim*4, name='d_h2_conv_256')))
+                h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
             if size == 128:
-                h3 = linear(tf.reshape(h2, [self.batch_size, -1]), 1, 'd_h2_lin_128')
                 return tf.nn.sigmoid(h3), h3
-            h3 = lrelu(self.d_bn3_256(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv_256')))
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin_256')
+            h4 = lrelu(self.d_bn4(conv2d(h3, self.df_dim*16, name='d_h4_conv')))
             return tf.nn.sigmoid(h4), h4
             
     def residual_block(self, image, size=128, type=1):
