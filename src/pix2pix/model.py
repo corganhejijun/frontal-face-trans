@@ -249,8 +249,8 @@ class pix2pix(object):
                     self.writer.add_summary(summary_str, counter)
 
                 errD_64 = self.d_loss_64.eval({self.real_data: batch_images})
-                errD_128 = self.d_loss_64.eval({self.real_data: batch_images})
-                errD_256 = self.d_loss_64.eval({self.real_data: batch_images})
+                errD_128 = self.d_loss_128.eval({self.real_data: batch_images})
+                errD_256 = self.d_loss_256.eval({self.real_data: batch_images})
                 errG_64 = self.g_loss_64.eval({self.real_data: batch_images})
                 errG_128 = self.g_loss_128.eval({self.real_data: batch_images})
                 errG_256 = self.g_loss_256.eval({self.real_data: batch_images})
