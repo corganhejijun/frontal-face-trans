@@ -218,32 +218,32 @@ class pix2pix(object):
                 else:
                     batch_images = np.array(batch).astype(np.float32)
 
-                for _ in range(2):
+                for _ in range(1):
                     # Update D64 network
                     _, summary_str = self.sess.run([d_optim_64, self.d_sum_64], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(4):
+                for _ in range(2):
                     # Update G64 network
                     _, summary_str = self.sess.run([g_optim_64, self.g_sum_64], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(1):
+                for _ in range(5):
                     # Update D128 network
                     _, summary_str = self.sess.run([d_optim_128, self.d_sum_128], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(2):
+                for _ in range(10):
                     # Update G128 network
                     _, summary_str = self.sess.run([g_optim_128, self.g_sum_128], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(1):
+                for _ in range(5):
                     # Update D256 network
                     _, summary_str = self.sess.run([d_optim_256, self.d_sum_256], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(2):
+                for _ in range(10):
                     # Update G256 network
                     _, summary_str = self.sess.run([g_optim_256, self.g_sum_256], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
