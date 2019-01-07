@@ -4,7 +4,6 @@ import dlib
 import os
 import numpy as np
 
-predictor_path = os.path.join(os.getcwd(), "..", "..", "models", "shape_predictor_68_face_landmarks.dat")
 
 def _shape_to_np(shape):
     xy = []
@@ -14,11 +13,9 @@ def _shape_to_np(shape):
     return xy
 
 
-def get_landmarks(img):
+def get_landmarks(img, detector, predictor):
     # if not automatically downloaded, get it from:
     # http://sourceforge.net/projects/dclib/files/dlib/v18.10/shape_predictor_68_face_landmarks.dat.bz2
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor(predictor_path)
 
     lmarks = []
     dets = detector(img, 1)
