@@ -2,7 +2,7 @@
 from src.util import faceFromDir
 
 IN_DIR = "datasets/lfw"
-OUT_DIR = "datasets/lfw_aligned"
+OUT_DIR = "datasets/lfw_aligned_bleed"
 SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
 
 faceFromDir(IN_DIR, OUT_DIR, SHAPE_MODEL)

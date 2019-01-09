@@ -38,6 +38,19 @@ def getFace(detector, shapePredict, file):
     if xmin < 0 or xmax < 0 or ymin < 0 or ymax < 0:
         print("file %s can't get bound" % file)
         return None
+    bleed = 10
+    xmin -= bleed
+    xmax += bleed
+    ymin -= 50
+    ymax += bleed
+    if xmax > len(img[0]):
+        xmax = len(img[0])
+    if xmin < 0:
+        xmin = 0
+    if ymax > len(img):
+        ymax = len(img)
+    if ymin < 0:
+        ymin = 0
     return img[ymin:ymax,xmin:xmax,:]
 
 def transFaceImg(det, shape, img, controlDstPts, file):

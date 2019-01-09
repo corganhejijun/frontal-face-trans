@@ -5,7 +5,7 @@ from src.util import faceFromDir
 CELEBA_IDENTITY_FILE = "datasets/celeba/identity_CelebA.txt"
 CELEBA_DATASET = "datasets/celeba/img_align_celeba"
 MIDDLE_DIR = "datasets/celeba/celeba_identified"
-OUT_DIR = "datasets/celeba_aligned"
+OUT_DIR = "datasets/celeba_aligned_bleed"
 
 copy_celeba(CELEBA_IDENTITY_FILE, CELEBA_DATASET, MIDDLE_DIR)
 

@@ -24,6 +24,9 @@ def getDatasetDistance(result_path, dataset_path, model_path):
                 count += 1
                 print("calculating distance of dir %s, current %d of total %d\n" % (dirName, count, len(filelist)))
                 subDir = os.path.join(dataset_path, dirName)
+                subFileList = os.listdir(subDir)
+                if len(subFileList) < 2:
+                    continue
                 try:
                     avg, std = distance(sess, subDir, 160)
                     file = open(result_path, "a")

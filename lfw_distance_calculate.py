@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*- 
 from src.FaceDistance import getDatasetDistance
 
-LFW_DATASET = "datasets/lfw_aligned"
+LFW_DATASET = "datasets/lfw_aligned_bleed"
 MODEL_DIR = "models/20180402-114759"
-RESULT_FILE_PATH = "datasets/lfw_distance.txt"
+RESULT_FILE_PATH = "datasets/lfw_distance_bleed.txt"
 
 getDatasetDistance(RESULT_FILE_PATH, LFW_DATASET, MODEL_DIR)
