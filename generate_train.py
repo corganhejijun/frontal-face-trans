@@ -11,6 +11,7 @@ FRONT_FACE_STANDARD = "datasets/eigen_face.jpg"
 SHAPE_MODEL = "models/shape_predictor_68_face_landmarks.dat"
 DATASET_DIR = "datasets/celeba_train_hd"
 DEST_DIR = "datasets/celeba_train_on_mask_256"
+NP_SAVE_DIR = "datasets/celeba_NP_MASK"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
@@ -34,6 +35,8 @@ class Face:
 
 if (not os.path.exists(DEST_DIR)):
     os.mkdir(DEST_DIR)
+if (not os.path.exists(NP_SAVE_DIR)):
+    os.mkdir(NP_SAVE_DIR)
 
 counter = 0
 folderList = os.listdir(DATASET_DIR)
@@ -93,3 +96,4 @@ for subFolder in folderList:
                             frontWithMsk[i*TRANS_SCALE + k][j*TRANS_SCALE : (j+1)*TRANS_SCALE] = other[i][j]
             result = combineImg(front, frontWithMsk)
             result.save(os.path.join(DEST_DIR, face.fileName))
+            np.save(os.path.join(NP_SAVE_DIR, face.fileName))
