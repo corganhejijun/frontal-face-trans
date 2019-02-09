@@ -15,7 +15,7 @@ NP_SAVE_DIR = "datasets/celeba_NP_MASK"
 
 shapePredict = dlib.shape_predictor(SHAPE_MODEL)
 detector = dlib.get_frontal_face_detector()
-FRONT_THRESHOLD_DISTANCE = 50
+FRONT_THRESHOLD_DISTANCE = 100
 ext = '.jpg'
 IMAGE_SIZE = 256
 BLACK_POINT_VALUE = 100
@@ -49,12 +49,13 @@ for subFolder in folderList:
         if not fileName.endswith(ext):
             continue
         filePath = os.path.join(DATASET_DIR, subFolder, fileName)
-        img = resizeFace(cv2.cvtColor(cv2.imread(filePath), cv2.COLOR_BGR2RGB), detector, shapePredict, 
-                            fileName, IMAGE_SIZE)
+        img_origin = cv2.cvtColor(cv2.imread(filePath), cv2.COLOR_BGR2RGB)
+        img = resizeFace(img_origin, detector, shapePredict, fileName, IMAGE_SIZE)
         if img is None:
             continue
         trans_img = cv2.resize(img, (int(img.shape[1] / TRANS_SCALE), int(img.shape[0] / TRANS_SCALE)))
-        landmarks, detect, shape = getFaceDis(trans_img, detector, shapePredict, fileName)
+        landmarks, _, _ = getFaceDis(img_origin, detector, shapePredict, fileName)
+        _, detect, shape = getFaceDis(trans_img, detector, shapePredict, fileName)
         if landmarks is None:
             continue
         face = Face(img, trans_img, shape, detect, fileName)
@@ -96,4 +97,4 @@ for subFolder in folderList:
                             frontWithMsk[i*TRANS_SCALE + k][j*TRANS_SCALE : (j+1)*TRANS_SCALE] = other[i][j]
             result = combineImg(front, frontWithMsk)
             result.save(os.path.join(DEST_DIR, face.fileName))
-            np.save(os.path.join(NP_SAVE_DIR, face.fileName))
+            np.save(os.path.join(NP_SAVE_DIR, face.fileName), other)

@@ -54,7 +54,7 @@ def resizeFace(img, detector, shape, path, size):
         if xmax > img.shape[1]:
             xmax = img.shape[1]
             xmin = xmax - img.shape[0]
-        return cv2.resize(img[:, xmin:xmax, :], (size * 2, size * 2))
+        return cv2.resize(img[:, xmin:xmax, :], (size, size))
     noseCenter = shape.part(NOSE_CENTER_NUMBER).y
     ymin = int(noseCenter - img.shape[1] / 2)
     ymax = int(noseCenter + img.shape[1] / 2)
@@ -64,4 +64,4 @@ def resizeFace(img, detector, shape, path, size):
     if ymax > img.shape[0]:
         ymax = img.shape[0]
         ymin = ymax - img.shape[1]
-    return cv2.resize(img[ymin:ymax, :, :], (size * 2, size * 2))
+    return cv2.resize(img[ymin:ymax, :, :], (size, size))
