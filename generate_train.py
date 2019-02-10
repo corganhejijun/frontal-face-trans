@@ -55,8 +55,10 @@ for subFolder in folderList:
             continue
         trans_img = cv2.resize(img, (int(img.shape[1] / TRANS_SCALE), int(img.shape[0] / TRANS_SCALE)))
         landmarks, _, _ = getFaceDis(img_origin, detector, shapePredict, fileName)
-        _, detect, shape = getFaceDis(trans_img, detector, shapePredict, fileName)
         if landmarks is None:
+            continue
+        _, detect, shape = getFaceDis(trans_img, detector, shapePredict, fileName)
+        if shape is None:
             continue
         face = Face(img, trans_img, shape, detect, fileName)
         diff = np.linalg.norm(landmarks - standardLandmarks)
