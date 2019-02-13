@@ -205,6 +205,7 @@ class pix2pix(object):
         g_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_128, var_list=self.g_vars_128)
         d_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_256, var_list=self.d_vars_256)
         g_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_256, var_list=self.g_vars_256)
+        d_optim_512 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_512, var_list=self.d_vars_512)
         g_optim_512 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_512, var_list=self.g_vars_512)
 
         init_op = tf.global_variables_initializer()
