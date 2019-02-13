@@ -337,7 +337,7 @@ class pix2pix(object):
         return tf.nn.relu(rb_sum)
 
     def g_64_to_128(self, image):
-        s2 = int(self.output_size/2)
+        s2 = int(self.output_size/4)
         rb1 = self.residual_block(image, size=128, type=1)
         rb2 = self.residual_block(rb1, size=128, type=2)
         rb2 = tf.image.resize_images(rb2, (s2, s2))
@@ -350,7 +350,7 @@ class pix2pix(object):
             return self.g_64_to_128(image)
 
     def g_128_to_256(self, image):
-        s = self.output_size
+        s = int(self.output_size/2)
         rb1 = self.residual_block(image, size=256, type=1)
         rb2 = self.residual_block(rb1, size=256, type=2)
         rb2 = tf.image.resize_images(rb2, (s, s))
@@ -376,8 +376,7 @@ class pix2pix(object):
             return self.g_256_to_512(image)
 
     def g_128_to_64(self, image):
-        s = self.output_size
-        s4, s8, s16, s32, s64, s128 = int(s/4), int(s/8), int(s/16), int(s/32), int(s/64), int(s/128)
+        s4, s8, s16, s32, s64, s128 = 64, 32, 16, 8, 4, 2
 
         # image is (128 x 128 x input_c_dim)
         e1 = conv2d(image, self.gf_dim, name='g_e1_conv_64')
