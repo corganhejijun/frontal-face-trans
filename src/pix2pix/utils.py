@@ -21,7 +21,7 @@ def load_data(image_path, fine_size, load_size, flip=True, is_test=False):
     img_A, img_B = load_image(image_path)
     img_A, img_B = preprocess_A_and_B(img_A, img_B, fine_size, load_size, flip=flip, is_test=is_test)
 
-    img_A = img_A/127.5 - 1.
+    img_A = img_A/127.5 - 1.  # color value unify
     img_B = img_B/127.5 - 1.
 
     img_AB = np.concatenate((img_A, img_B), axis=2)
