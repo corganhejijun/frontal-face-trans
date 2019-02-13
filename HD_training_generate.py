@@ -56,10 +56,6 @@ for file in folderList:
                     if end > 512:
                         end = 512
                     imgMask[int((i-ymin)*Y_MASK_SCALE+k)][int((j-xmin)*X_MASK_SCALE):end] = [0,0,0]
-    cv2.imshow("",mask)
-    cv2.waitKey(0)
-    cv2.imshow("",imgMask) 
-    cv2.waitKey(0)
     result = combineImg(img, imgMask)
     result.save(os.path.join(DEST_DIR, file))
     
