@@ -10,9 +10,9 @@ from ops import *
 from utils import *
 
 class pix2pix(object):
-    def __init__(self, sess, image_size=512, batch_size=1, sample_size=1, output_size=512, load_size=542,
+    def __init__(self, sess, image_size=256, batch_size=1, sample_size=1, output_size=256, load_size=286,
                  gf_dim=64, df_dim=64, L1_lambda=100, input_c_dim=3, output_c_dim=3, dataset_name='facades',
-                 checkpoint_dir=None, sample_dir=None):
+                 checkpoint_dir=None, sample_dir=None, phase='test', test_size=128):
         """
         Args:
             sess: TensorFlow session
@@ -61,41 +61,43 @@ class pix2pix(object):
 
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
-        self.build_model()
+        if phase == 'test':
+            self.build_model(test_size)
+        else:
+            self.build_model(image_size)
 
-    def build_model(self):
+    def build_model(self, size):
         self.real_data = tf.placeholder(tf.float32,
-                [self.batch_size, self.image_size, self.image_size, self.input_c_dim + self.output_c_dim],
+                [self.batch_size, size, size, self.input_c_dim + self.output_c_dim],
                 name='real_A_and_B_images')
 
-        self.real_B_512 = self.real_data[:, :, :, :self.input_c_dim]
-        self.real_B_256 = tf.image.resize_images(self.real_B_512, (int(self.image_size / 2), int(self.image_size / 2)))
-        self.real_B_128 = tf.image.resize_images(self.real_B_512, (int(self.image_size / 4), int(self.image_size / 4)))
-        self.real_B_64 = tf.image.resize_images(self.real_B_512, (int(self.image_size / 8), int(self.image_size / 8)))
-        self.real_A_512 = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
-        self.real_A_256 = tf.image.resize_images(self.real_A_512, (int(self.image_size / 2), int(self.image_size / 2)))
-        self.real_A_128 = tf.image.resize_images(self.real_A_512, (int(self.image_size / 4), int(self.image_size / 4)))
-        self.real_A_64 = tf.image.resize_images(self.real_A_512, (int(self.image_size / 8), int(self.image_size / 8)))
+        self.real_B_256 = self.real_data[:, :, :, :self.input_c_dim]
+        self.real_B_128 = tf.image.resize_images(self.real_B_512, (int(size / 2), int(size / 2)))
+        self.real_B_64 = tf.image.resize_images(self.real_B_512, (int(size / 4), int(size / 4)))
+        self.real_A_256 = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
+        self.real_A_128 = tf.image.resize_images(self.real_A_512, (int(size / 2), int(size / 2)))
+        self.real_A_64 = tf.image.resize_images(self.real_A_512, (int(size / 4), int(size / 4)))
+        if size == 128:
+            self.real_A_64 = self.real_A_128
+            self.real_A_128 = self.real_A_256
+            self.real_B_64 = self.real_B_128
+            self.real_B_128 = self.real_B_256
 
         self.fake_B_64 = self.generator_128_to_64(self.real_A_128)
         self.fake_B_128 = self.generator_64_to_128(self.fake_B_64)
         self.fake_B_256 = self.generator_128_to_256(self.fake_B_128)
-        self.fake_B_512 = self.generator_256_to_512(self.fake_B_256)
 
         self.real_AB_64 = tf.concat([self.real_A_64, self.real_B_64], 3)
         self.fake_AB_64 = tf.concat([self.real_A_64, self.fake_B_64], 3)
         self.BB_64 = tf.concat([self.real_B_64, self.fake_B_64], 3)
         self.BB_128 = tf.concat([self.real_B_128, self.fake_B_128], 3)
         self.BB_256 = tf.concat([self.real_B_256, self.fake_B_256], 3)
-        self.BB_512 = tf.concat([self.real_B_512, self.fake_B_512], 3)
         self.D64, self.D_logits64 = self.discriminator(self.real_AB_64, "discriminator_64", reuse=False)
         self.D_64, self.D_logits_64 = self.discriminator(self.fake_AB_64, "discriminator_64", reuse=True)
         self.D64_BB, self.D_logits64_BB = self.discriminator(self.BB_64, "discriminator_64_BB")
         self.D128_BB, self.D_logits128_BB = self.discriminator(self.BB_128, "discriminator_128_BB", size=128)
         self.D256_BB, self.D_logits256_BB = self.discriminator(self.BB_256, "discriminator_256_BB", size=256)
-        self.D512_BB, self.D_logits512_BB = self.discriminator(self.BB_512, "discriminator_512_BB", size=512)
 
-        self.fake_B_sample_512 = self.sampler_512(self.real_A_128)
         self.fake_B_sample_256 = self.sampler_256(self.real_A_128)
         self.fake_B_sample_128 = self.sampler_128(self.real_A_128)
         self.fake_B_sample_64 = self.sampler_64(self.real_A_128)
@@ -105,18 +107,15 @@ class pix2pix(object):
         self.d64_sum_bb = tf.summary.histogram("d64_bb", self.D64_BB)
         self.d128_sum_bb = tf.summary.histogram("d128_bb", self.D128_BB)
         self.d256_sum_bb = tf.summary.histogram("d256_bb", self.D256_BB)
-        self.d512_sum_bb = tf.summary.histogram("d512_bb", self.D256_BB)
         self.fake_B_64_sum = tf.summary.image("fake_B_64", self.fake_B_64)
         self.fake_B_128_sum = tf.summary.image("fake_B_128", self.fake_B_128)
         self.fake_B_256_sum = tf.summary.image("fake_B_256", self.fake_B_256)
-        self.fake_B_512_sum = tf.summary.image("fake_B_512", self.fake_B_512)
 
         self.d_loss_real_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64, labels=tf.ones_like(self.D64)))
         self.d_loss_fake_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.zeros_like(self.D_64)))
         self.d_loss_bb_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64_BB, labels=tf.zeros_like(self.D64_BB)))
         self.d_loss_bb_128 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits128_BB, labels=tf.zeros_like(self.D128_BB)))
         self.d_loss_bb_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256_BB, labels=tf.zeros_like(self.D256_BB)))
-        self.d_loss_bb_512 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits512_BB, labels=tf.zeros_like(self.D512_BB)))
         self.g_loss_64 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_64, labels=tf.ones_like(self.D_64))) \
                 + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits64_BB, labels=tf.ones_like(self.D64_BB))) \
                 + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_64 - self.fake_B_64))
@@ -124,36 +123,29 @@ class pix2pix(object):
                 + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_128 - self.fake_B_128))
         self.g_loss_256 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits256_BB, labels=tf.ones_like(self.D256_BB))) \
                 + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_256 - self.fake_B_256))
-        self.g_loss_512 = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits512_BB, labels=tf.ones_like(self.D512_BB))) \
-                + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_B_512 - self.fake_B_512))
 
         self.d_loss_real_64_sum = tf.summary.scalar("d_loss_real_64", self.d_loss_real_64)
         self.d_loss_fake_64_sum = tf.summary.scalar("d_loss_fake_64", self.d_loss_fake_64)
         self.d_loss_bb_64_sum = tf.summary.scalar("d_loss_bb_64", self.d_loss_bb_64)
         self.d_loss_bb_128_sum = tf.summary.scalar("d_loss_bb_128", self.d_loss_bb_128)
         self.d_loss_bb_256_sum = tf.summary.scalar("d_loss_bb_256", self.d_loss_bb_256)
-        self.d_loss_bb_512_sum = tf.summary.scalar("d_loss_bb_512", self.d_loss_bb_512)
 
         self.d_loss_64 = self.d_loss_real_64 + self.d_loss_fake_64 + self.d_loss_bb_64
         self.d_loss_128 = self.d_loss_bb_128
         self.d_loss_256 = self.d_loss_bb_256
-        self.d_loss_512 = self.d_loss_bb_512
 
         self.g_loss_64_sum = tf.summary.scalar("g_loss_64", self.g_loss_64)
         self.g_loss_128_sum = tf.summary.scalar("g_loss_128", self.g_loss_128)
         self.g_loss_256_sum = tf.summary.scalar("g_loss_256", self.g_loss_256)
-        self.g_loss_512_sum = tf.summary.scalar("g_loss_256", self.g_loss_512)
         self.d_loss_64_sum = tf.summary.scalar("d_loss_64", self.d_loss_64)
         self.d_loss_128_sum = tf.summary.scalar("d_loss_128", self.d_loss_128)
         self.d_loss_256_sum = tf.summary.scalar("d_loss_256", self.d_loss_256)
-        self.d_loss_512_sum = tf.summary.scalar("d_loss_512", self.d_loss_512)
 
         t_vars = tf.trainable_variables()
 
         self.d_vars_64 = []
         self.d_vars_128 = []
         self.d_vars_256 = []
-        self.d_vars_512 = []
         for var in t_vars:
             if 'd_' in var.name:
                 if '64' in var.name:
@@ -162,8 +154,6 @@ class pix2pix(object):
                     self.d_vars_128.append(var)
                 if '256' in var.name:
                     self.d_vars_256.append(var)
-                else:
-                    self.d_vars_512.append(var)
         self.g_vars_64 = []
         self.g_vars_128 = []
         self.g_vars_256 = []
@@ -176,8 +166,6 @@ class pix2pix(object):
                     self.g_vars_128.append(var)
                 if '256' in var.name:
                     self.g_vars_256.append(var)
-                else:
-                    self.g_vars_512.append(var)
 
         self.saver = tf.train.Saver()
 
@@ -193,7 +181,7 @@ class pix2pix(object):
     def sample_model(self, sample_dir, epoch, idx):
         sample_images = self.load_random_samples()
         samples, d_loss, g_loss = self.sess.run(
-            [self.fake_B_sample_512, self.d_loss_512, self.g_loss_512], feed_dict={self.real_data: sample_images}
+            [self.fake_B_sample_256, self.d_loss_256, self.g_loss_256], feed_dict={self.real_data: sample_images}
         )
         save_images(samples, [self.batch_size, 1], './{}/train_{:02d}_{:04d}.png'.format(sample_dir, epoch, idx))
         print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
@@ -205,8 +193,6 @@ class pix2pix(object):
         g_optim_128 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_128, var_list=self.g_vars_128)
         d_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_256, var_list=self.d_vars_256)
         g_optim_256 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_256, var_list=self.g_vars_256)
-        d_optim_512 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.d_loss_512, var_list=self.d_vars_512)
-        g_optim_512 = tf.train.AdamOptimizer(args.lr, beta1=args.beta1).minimize(self.g_loss_512, var_list=self.g_vars_512)
 
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
@@ -218,8 +204,6 @@ class pix2pix(object):
         self.d_sum_128 = tf.summary.merge([self.d_loss_128_sum])
         self.g_sum_256 = tf.summary.merge([self.d256_sum_bb, self.fake_B_256_sum, self.d_loss_bb_256_sum, self.g_loss_256_sum])
         self.d_sum_256 = tf.summary.merge([self.d_loss_256_sum])
-        self.g_sum_512 = tf.summary.merge([self.d512_sum_bb, self.fake_B_512_sum, self.d_loss_bb_512_sum, self.g_loss_512_sum])
-        self.d_sum_512 = tf.summary.merge([self.d_loss_512_sum])
         self.writer = tf.summary.FileWriter("./logs", self.sess.graph)
 
         counter = 1
@@ -274,29 +258,17 @@ class pix2pix(object):
                     _, summary_str = self.sess.run([g_optim_256, self.g_sum_256], feed_dict={ self.real_data: batch_images })
                     self.writer.add_summary(summary_str, counter)
 
-                for _ in range(5):
-                    # Update D512 network
-                    _, summary_str = self.sess.run([d_optim_512, self.d_sum_512], feed_dict={ self.real_data: batch_images })
-                    self.writer.add_summary(summary_str, counter)
-
-                for _ in range(10):
-                    # Update G512 network
-                    _, summary_str = self.sess.run([g_optim_512, self.g_sum_512], feed_dict={ self.real_data: batch_images })
-                    self.writer.add_summary(summary_str, counter)
-
                 errD_64 = self.d_loss_64.eval({self.real_data: batch_images})
                 errD_128 = self.d_loss_128.eval({self.real_data: batch_images})
                 errD_256 = self.d_loss_256.eval({self.real_data: batch_images})
-                errD_512 = self.d_loss_512.eval({self.real_data: batch_images})
                 errG_64 = self.g_loss_64.eval({self.real_data: batch_images})
                 errG_128 = self.g_loss_128.eval({self.real_data: batch_images})
                 errG_256 = self.g_loss_256.eval({self.real_data: batch_images})
-                errG_512 = self.g_loss_512.eval({self.real_data: batch_images})
 
                 counter += 1
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f, %.8f]" \
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: [%.8f, %.8f, %.8f], g_loss: [%.8f, %.8f, %.8f]" \
                         % (epoch, idx, batch_idxs, time.time() - start_time, 
-                                errD_64, errD_128, errD_256, errD_512, errG_64, errG_128, errG_256, errG_512))
+                                errD_64, errD_128, errD_256, errG_64, errG_128, errG_256))
 
                 if np.mod(counter, 100) == 1:
                     self.sample_model(args.sample_dir, epoch, idx)
@@ -363,19 +335,6 @@ class pix2pix(object):
         with tf.variable_scope("generator"):
             return self.g_128_to_256(image)
 
-    def g_256_to_512(self, image):
-        s = self.output_size
-        rb1 = self.residual_block(image, size=512, type=1)
-        rb2 = self.residual_block(rb1, size=512, type=2)
-        rb2 = tf.image.resize_images(rb2, (s, s))
-        self.d8 = conv2d(rb2, self.output_c_dim, d_h=1, d_w=1, name='g_d9_512')
-        # d8 is (512 x 512 x output_c_dim)
-        return tf.nn.tanh(self.d8)
-
-    def generator_256_to_512(self, image):
-        with tf.variable_scope("generator"):
-            return self.g_256_to_512(image)
-
     def g_128_to_64(self, image):
         s4, s8, s16, s32, s64, s128 = 64, 32, 16, 8, 4, 2
 
@@ -398,31 +357,26 @@ class pix2pix(object):
         self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e7),
             [self.batch_size, s128, s128, self.gf_dim*8], name='g_d1_64', with_w=True)
         d1 = tf.nn.dropout(self.g_bn_d1_64(self.d1), 0.5)
-        d1 = tf.concat([d1, e6], 3)
         # d1 is (2 x 2 x self.gf_dim*8*2)
 
         self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
             [self.batch_size, s64, s64, self.gf_dim*8], name='g_d2_64', with_w=True)
         d2 = tf.nn.dropout(self.g_bn_d2_64(self.d2), 0.5)
-        d2 = tf.concat([d2, e5], 3)
         # d2 is (4 x 4 x self.gf_dim*8*2)
 
         self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
             [self.batch_size, s32, s32, self.gf_dim*8], name='g_d3_64', with_w=True)
         d3 = tf.nn.dropout(self.g_bn_d3_64(self.d3), 0.5)
-        d3 = tf.concat([d3, e4], 3)
         # d3 is (8 x 8 x self.gf_dim*8*2)
 
         self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
             [self.batch_size, s16, s16, self.gf_dim*8], name='g_d4_64', with_w=True)
         d4 = self.g_bn_d4_64(self.d4)
-        d4 = tf.concat([d4, e3], 3)
         # d4 is (16 x 16 x self.gf_dim*8*2)
 
         self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
             [self.batch_size, s8, s8, self.gf_dim*4], name='g_d5_64', with_w=True)
         d5 = self.g_bn_d5_64(self.d5)
-        d5 = tf.concat([d5, e2], 3)
         # d5 is (32 x 32 x self.gf_dim*4*2)
 
         self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
@@ -454,13 +408,6 @@ class pix2pix(object):
             scope.reuse_variables()
             return self.g_128_to_256(out_128)
             
-    def sampler_512(self, image, y=None):
-        out_256 = self.sampler_256(image)
-
-        with tf.variable_scope("generator") as scope:
-            scope.reuse_variables()
-            return self.g_256_to_512(out_256)
-
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
         model_dir = "%s_%s_%s" % (self.dataset_name, self.batch_size, self.output_size)
@@ -538,6 +485,3 @@ class pix2pix(object):
 
                 samples = self.sess.run(self.fake_B_sample_256, feed_dict={self.real_data: sample_image})
                 save_images(samples, [self.batch_size, 1], './{}_256/{}.png'.format(args.test_dir, fileName))
-
-                samples = self.sess.run(self.fake_B_sample_512, feed_dict={self.real_data: sample_image})
-                save_images(samples, [self.batch_size, 1], './{}_512/{}.png'.format(args.test_dir, fileName))

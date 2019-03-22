@@ -11,8 +11,8 @@ parser.add_argument('--dataset_name', dest='dataset_name', default='celeb_train'
 parser.add_argument('--epoch', dest='epoch', type=int, default=200, help='# of epoch')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=1, help='# images in batch')
 parser.add_argument('--train_size', dest='train_size', type=int, default=500, help='# images used to train')
-parser.add_argument('--load_size', dest='load_size', type=int, default=542, help='scale images to this size')
-parser.add_argument('--fine_size', dest='fine_size', type=int, default=512, help='then crop to this size')
+parser.add_argument('--load_size', dest='load_size', type=int, default=286, help='scale images to this size')
+parser.add_argument('--fine_size', dest='fine_size', type=int, default=256, help='then crop to this size')
 parser.add_argument('--ngf', dest='ngf', type=int, default=64, help='# of gen filters in first conv layer')
 parser.add_argument('--ndf', dest='ndf', type=int, default=64, help='# of discri filters in first conv layer')
 parser.add_argument('--input_nc', dest='input_nc', type=int, default=3, help='# of input image channels')
@@ -42,8 +42,6 @@ def main(_):
         os.makedirs(args.checkpoint_dir)
     if not os.path.exists(args.sample_dir):
         os.makedirs(args.sample_dir)
-    if not os.path.exists(args.test_dir):
-        os.makedirs(args.test_dir)
     if not os.path.exists(args.test_dir + '_64'):
         os.makedirs(args.test_dir + '_64')
     if not os.path.exists(args.test_dir + '_128'):
@@ -53,7 +51,7 @@ def main(_):
         model = pix2pix(sess, image_size=args.fine_size, batch_size=args.batch_size,
                         output_size=args.fine_size, dataset_name=args.dataset_name,
                         checkpoint_dir=args.checkpoint_dir, sample_dir=args.sample_dir,
-                        load_size=args.load_size)
+                        load_size=args.load_size, phase=args.phase, test_size=arg.test_size)
 
         if args.phase == 'train':
             model.train(args)
