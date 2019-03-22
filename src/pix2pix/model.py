@@ -82,10 +82,12 @@ class pix2pix(object):
             self.real_A_128 = self.real_A_256
             self.real_B_64 = self.real_B_128
             self.real_B_128 = self.real_B_256
-            self.fake_B_sample_256 = self.sampler_256(self.real_A_128)
-            self.fake_B_sample_128 = self.sampler_128(self.real_A_128)
-            self.fake_B_sample_64 = self.sampler_64(self.real_A_128)
-            return
+            self.real_A_256 = tf.image.resize_images(self.real_A_128, (size*2, size*2))
+            self.real_B_256 = tf.image.resize_images(self.real_B_128, (size*2, size*2))
+
+        self.fake_B_sample_256 = self.sampler_256(self.real_A_128)
+        self.fake_B_sample_128 = self.sampler_128(self.real_A_128)
+        self.fake_B_sample_64 = self.sampler_64(self.real_A_128)
 
         self.fake_B_64 = self.generator_128_to_64(self.real_A_128)
         self.fake_B_128 = self.generator_64_to_128(self.fake_B_64)
