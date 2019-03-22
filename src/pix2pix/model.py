@@ -72,11 +72,11 @@ class pix2pix(object):
                 name='real_A_and_B_images')
 
         self.real_B_256 = self.real_data[:, :, :, :self.input_c_dim]
-        self.real_B_128 = tf.image.resize_images(self.real_B_512, (int(size / 2), int(size / 2)))
-        self.real_B_64 = tf.image.resize_images(self.real_B_512, (int(size / 4), int(size / 4)))
+        self.real_B_128 = tf.image.resize_images(self.real_B_256, (int(size / 2), int(size / 2)))
+        self.real_B_64 = tf.image.resize_images(self.real_B_256, (int(size / 4), int(size / 4)))
         self.real_A_256 = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
-        self.real_A_128 = tf.image.resize_images(self.real_A_512, (int(size / 2), int(size / 2)))
-        self.real_A_64 = tf.image.resize_images(self.real_A_512, (int(size / 4), int(size / 4)))
+        self.real_A_128 = tf.image.resize_images(self.real_A_256, (int(size / 2), int(size / 2)))
+        self.real_A_64 = tf.image.resize_images(self.real_A_256, (int(size / 4), int(size / 4)))
         if size == 128:
             self.real_A_64 = self.real_A_128
             self.real_A_128 = self.real_A_256
@@ -157,7 +157,6 @@ class pix2pix(object):
         self.g_vars_64 = []
         self.g_vars_128 = []
         self.g_vars_256 = []
-        self.g_vars_512 = []
         for var in t_vars:
             if 'g_' in var.name:
                 if '64' in var.name:
