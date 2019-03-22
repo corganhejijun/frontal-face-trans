@@ -44,6 +44,7 @@ for file in folderList:
     X_MASK_SCALE = OUT_SIZE / xmaxSize
     Y_MASK_SCALE = OUT_SIZE / ymaxSize
     img = cv2.cvtColor(cv2.imread(os.path.join(HD_CELEBA_DIR, file)), cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, (OUT_SIZE, OUT_SIZE))
     imgMask = np.copy(img) 
     for i in range(ymin,ymax):
         for j in range(xmin,xmax):
