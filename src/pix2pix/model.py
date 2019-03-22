@@ -62,11 +62,11 @@ class pix2pix(object):
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
         if phase == 'test':
-            self.build_model(test_size)
+            self.build_model(test_size, phase)
         else:
-            self.build_model(image_size)
+            self.build_model(image_size, phase)
 
-    def build_model(self, size):
+    def build_model(self, size, phase):
         self.real_data = tf.placeholder(tf.float32,
                 [self.batch_size, size, size, self.input_c_dim + self.output_c_dim],
                 name='real_A_and_B_images')
@@ -77,11 +77,15 @@ class pix2pix(object):
         self.real_A_256 = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
         self.real_A_128 = tf.image.resize_images(self.real_A_256, (int(size / 2), int(size / 2)))
         self.real_A_64 = tf.image.resize_images(self.real_A_256, (int(size / 4), int(size / 4)))
-        if size == 128:
+        if phase == 'test':
             self.real_A_64 = self.real_A_128
             self.real_A_128 = self.real_A_256
             self.real_B_64 = self.real_B_128
             self.real_B_128 = self.real_B_256
+            self.fake_B_sample_256 = self.sampler_256(self.real_A_128)
+            self.fake_B_sample_128 = self.sampler_128(self.real_A_128)
+            self.fake_B_sample_64 = self.sampler_64(self.real_A_128)
+            return
 
         self.fake_B_64 = self.generator_128_to_64(self.real_A_128)
         self.fake_B_128 = self.generator_64_to_128(self.fake_B_64)
@@ -98,9 +102,6 @@ class pix2pix(object):
         self.D128_BB, self.D_logits128_BB = self.discriminator(self.BB_128, "discriminator_128_BB", size=128)
         self.D256_BB, self.D_logits256_BB = self.discriminator(self.BB_256, "discriminator_256_BB", size=256)
 
-        self.fake_B_sample_256 = self.sampler_256(self.real_A_128)
-        self.fake_B_sample_128 = self.sampler_128(self.real_A_128)
-        self.fake_B_sample_64 = self.sampler_64(self.real_A_128)
 
         self.d64_sum = tf.summary.histogram("d64", self.D64)
         self.d_64_sum = tf.summary.histogram("d_64", self.D_64)
