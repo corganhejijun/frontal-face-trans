@@ -5,9 +5,10 @@ import cv2
 import random
 from src.resize_for_train import combineImg
 
+OUT_SIZE = 256
 NP_SAVE_DIR = "datasets/celeba_NP_MASK"
 HD_CELEBA_DIR = "datasets/celeba/data_crop_512_jpg"
-DEST_DIR = "datasets/HD_training"
+DEST_DIR = "datasets/HD_training_" + str(OUT_SIZE)
 BLACK_POINT_VALUE = 100
 
 counter = 0
@@ -40,21 +41,21 @@ for file in folderList:
                     xmax = j
     ymaxSize = ymax - ymin
     xmaxSize = xmax - xmin
-    X_MASK_SCALE = 512 / xmaxSize
-    Y_MASK_SCALE = 512 / ymaxSize
+    X_MASK_SCALE = OUT_SIZE / xmaxSize
+    Y_MASK_SCALE = OUT_SIZE / ymaxSize
     img = cv2.cvtColor(cv2.imread(os.path.join(HD_CELEBA_DIR, file)), cv2.COLOR_BGR2RGB)
     imgMask = np.copy(img) 
     for i in range(ymin,ymax):
         for j in range(xmin,xmax):
             if np.sum(mask[i][j]) < BLACK_POINT_VALUE:
                 for k in range(int(Y_MASK_SCALE)+1):
-                    if (i-ymin)*Y_MASK_SCALE+k >= 512:
+                    if (i-ymin)*Y_MASK_SCALE+k >= OUT_SIZE:
                         continue
-                    if (j-xmin)*X_MASK_SCALE >= 512:
+                    if (j-xmin)*X_MASK_SCALE >= OUT_SIZE:
                         continue
                     end = int(((j-xmin)+1)*X_MASK_SCALE)
-                    if end > 512:
-                        end = 512
+                    if end > OUT_SIZE:
+                        end = OUT_SIZE
                     imgMask[int((i-ymin)*Y_MASK_SCALE+k)][int((j-xmin)*X_MASK_SCALE):end] = [0,0,0]
     result = combineImg(img, imgMask)
     result.save(os.path.join(DEST_DIR, file))
