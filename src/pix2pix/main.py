@@ -46,6 +46,8 @@ def main(_):
         os.makedirs(args.test_dir + '_64')
     if not os.path.exists(args.test_dir + '_128'):
         os.makedirs(args.test_dir + '_128')
+    if not os.path.exists(args.test_dir + '_256'):
+        os.makedirs(args.test_dir + '_256')
 
     with tf.Session() as sess:
         model = pix2pix(sess, image_size=args.fine_size, batch_size=args.batch_size,
