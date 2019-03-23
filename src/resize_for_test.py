@@ -1,8 +1,8 @@
 import os
 import cv2
 
-folder = 'datasets/celeb_train/val_test'
-destFolder = 'datasets/celeb_train/resized_val_test'
+folder = 'pix2pix/datasets/celeb_train/val_test'
+destFolder = 'pix2pix/datasets/celeb_train/resized_val_test'
 if not os.path.isdir(destFolder):
     os.mkdir(destFolder)
 for file in os.listdir(folder):
