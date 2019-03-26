@@ -328,7 +328,7 @@ class pix2pix(object):
         d128 = tf.concat([d128, e128], 3)
         # d128 is (128 x 128 x self.gf_dim*2*2)
 
-        out_128, _, _ = deconv2d(tf.nn.relu(d128),
+        out_128, _, _ = deconv2d(tf.nn.relu(rb2),
             [self.batch_size, s2, s2, self.output_c_dim], name='g_d128_out', with_w=True)
 
         return tf.nn.tanh(out_128), d128
