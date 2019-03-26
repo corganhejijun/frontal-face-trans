@@ -92,9 +92,9 @@ class pix2pix(object):
 
         self.fake_B_64, d6 = self.generator_128_to_64(self.real_A_128)
         self.fake_B_128, d128 = self.generator_64_to_128(self.real_A_128, d6)
-        self.fake_B_256 = self.generator_128_to_256(self.real_A_128, d128)
+        self.fake_B_256 = self.generator_128_to_256(d128)
 
-        self.fake_B_sample_256 = self.sampler_256(self.real_A_128, d6, d128)
+        self.fake_B_sample_256 = self.sampler_256(d128)
         self.fake_B_sample_128, _ = self.sampler_128(self.real_A_128, d6)
         self.fake_B_sample_64, _ = self.sampler_64(self.real_A_128)
 
@@ -337,26 +337,18 @@ class pix2pix(object):
         with tf.variable_scope("generator"):
             return self.g_64_to_128(image, d6)
 
-    def g_128_to_256(self, image, d128):
+    def g_128_to_256(self, d128):
         s = 256
         rb1 = self.residual_block(d128, size=s, type=1)
         rb2 = self.residual_block(rb1, size=s, type=2)
 
-        self.d256, self.d256_w, self.d256_b = deconv2d(tf.nn.relu(rb2),
-            [self.batch_size, s, s, self.gf_dim], name='g_d8_128', with_w=True)
-        d256 = self.g_bn_d8_256(self.d256)
-        resizeImg = tf.image.resize_images(image, (s, s))
-        e256 = conv2d(resizeImg, self.gf_dim, d_h=1, d_w=1, name='g_e256_conv')
-        d256 = tf.concat([d256, e256], 3)
-        # d256 is (256 x 256 x self.gf_dim*2*2)
-
-        out_256, _, _ = deconv2d(tf.nn.relu(d256),
+        out_256, _, _ = deconv2d(tf.nn.relu(rb2),
             [self.batch_size, s, s, self.output_c_dim], name='g_d256_out', with_w=True)
         return tf.nn.tanh(out_256)
 
-    def generator_128_to_256(self, image, d128):
+    def generator_128_to_256(self, d128):
         with tf.variable_scope("generator"):
-            return self.g_128_to_256(image, d128)
+            return self.g_128_to_256(d128)
 
     def g_128_to_64(self, image):
         s4, s8, s16, s32, s64, s128 = 64, 32, 16, 8, 4, 2
@@ -432,10 +424,10 @@ class pix2pix(object):
             scope.reuse_variables()
             return self.g_64_to_128(image, d6)
             
-    def sampler_256(self, image, d6, d128, y=None):
+    def sampler_256(self, d128, y=None):
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
-            return self.g_128_to_256(image, d128)
+            return self.g_128_to_256(d128)
             
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
