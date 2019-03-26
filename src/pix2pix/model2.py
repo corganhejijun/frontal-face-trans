@@ -306,8 +306,7 @@ class pix2pix(object):
                 h4 = lrelu(self.d_bn4(conv2d(h3, self.df_dim*16, name='d_h4_conv')))
             if size == 256:
                 return tf.nn.sigmoid(h4), h4
-            h5 = lrelu(self.d_bn5(conv2d(h4, self.df_dim*32, name='d_h5_conv')))
-            return tf.nn.sigmoid(h5), h5
+            return None, None
             
     def residual_block(self, input_d, size, type):
         rb1 = conv2d(input_d, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_1')
@@ -412,9 +411,9 @@ class pix2pix(object):
             [self.batch_size, s4, s4, self.gf_dim], name='g_d6_64', with_w=True)
         d6 = self.g_bn_d6_64(self.d6)
         d6 = tf.concat([d6, e1], 3)
-        # d6 is (64 x 64 x self.gf_dim*2*2)
+        # d6 is (64 x 64 x self.gf_dim*2)
 
-        out_64, _, _ = deconv2d(tf.nn.relu(d6),
+        out_64, _, _ = deconv2d(tf.nn.relu(d5),
             [self.batch_size, s4, s4, self.output_c_dim], name='g_d6_64_out', with_w=True)
 
         return tf.nn.tanh(out_64), d6
