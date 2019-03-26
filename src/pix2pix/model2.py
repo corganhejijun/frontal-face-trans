@@ -310,9 +310,9 @@ class pix2pix(object):
             return tf.nn.sigmoid(h5), h5
             
     def residual_block(self, input_d, size, type):
-        rb1 = conv2d(input_d, self.gf_dim * 2 * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_1')
+        rb1 = conv2d(input_d, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_1')
         rb1 = tf.nn.relu(rb1)
-        rb2 = conv2d(rb1, self.gf_dim * 2 * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_2')
+        rb2 = conv2d(rb1, self.gf_dim * 2, d_h=1, d_w=1, name='g_rb_' + str(size) + '_conv_rb' + str(type) + '_2')
         rb_sum = tf.add(input_d, rb2, name='g_rb_' + str(size) + '_add_rb' + str(type))
         return tf.nn.relu(rb_sum)
 
@@ -322,7 +322,7 @@ class pix2pix(object):
         rb1 = self.residual_block(d6, size=s2, type=1)
         rb2 = self.residual_block(rb1, size=s2, type=2)
 
-        self.d128, self.d128_w, self.d128_b = deconv2d(tf.nn.relu(d6),
+        self.d128, self.d128_w, self.d128_b = deconv2d(tf.nn.relu(rb2),
             [self.batch_size, s2, s2, self.gf_dim*2], name='g_d7_128', with_w=True)
         d128 = self.g_bn_d7_128(self.d128)
         e128 = conv2d(image, self.gf_dim*2, name='g_e128_conv')
@@ -343,7 +343,7 @@ class pix2pix(object):
         rb1 = self.residual_block(d128, size=s, type=1)
         rb2 = self.residual_block(rb1, size=s, type=2)
 
-        self.d256, self.d256_w, self.d256_b = deconv2d(tf.nn.relu(d128),
+        self.d256, self.d256_w, self.d256_b = deconv2d(tf.nn.relu(rb2),
             [self.batch_size, s, s, self.gf_dim*2], name='g_d8_128', with_w=True)
         d256 = self.g_bn_d8_256(self.d256)
         e256 = conv2d(image, self.gf_dim*2, name='g_e256_conv')
@@ -408,7 +408,7 @@ class pix2pix(object):
         # d5 is (32 x 32 x self.gf_dim*4*2)
 
         self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
-            [self.batch_size, s4, s4, self.gf_dim*2], name='g_d6_64', with_w=True)
+            [self.batch_size, s4, s4, self.gf_dim], name='g_d6_64', with_w=True)
         d6 = self.g_bn_d6_64(self.d6)
         d6 = tf.concat([d6, e1], 3)
         # d6 is (64 x 64 x self.gf_dim*2*2)
@@ -498,7 +498,6 @@ class pix2pix(object):
             sample_images = np.array(sample_images)
             print(sample_images.shape)
 
-            start_time = time.time()
             if self.load(self.checkpoint_dir):
                 print(" [*] Load SUCCESS")
             else:
