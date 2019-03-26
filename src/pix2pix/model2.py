@@ -323,9 +323,9 @@ class pix2pix(object):
         rb2 = self.residual_block(rb1, size=s2, type=2)
 
         self.d128, self.d128_w, self.d128_b = deconv2d(tf.nn.relu(rb2),
-            [self.batch_size, s2, s2, self.gf_dim*2], name='g_d7_128', with_w=True)
+            [self.batch_size, s2, s2, self.gf_dim], name='g_d7_128', with_w=True)
         d128 = self.g_bn_d7_128(self.d128)
-        e128 = conv2d(image, self.gf_dim*2, name='g_e128_conv')
+        e128 = conv2d(image, self.gf_dim, name='g_e128_conv')
         d128 = tf.concat([d128, e128], 3)
         # d128 is (128 x 128 x self.gf_dim*2*2)
 
