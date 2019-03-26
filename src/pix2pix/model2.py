@@ -346,7 +346,7 @@ class pix2pix(object):
         self.d256, self.d256_w, self.d256_b = deconv2d(tf.nn.relu(rb2),
             [self.batch_size, s, s, self.gf_dim], name='g_d8_128', with_w=True)
         d256 = self.g_bn_d8_256(self.d256)
-        resizeImg = tf.image.resize_images(image, s, s)
+        resizeImg = tf.image.resize_images(image, (s, s))
         e256 = conv2d(resizeImg, self.gf_dim, d_h=1, d_w=1, name='g_e256_conv')
         d256 = tf.concat([d256, e256], 3)
         # d256 is (256 x 256 x self.gf_dim*2*2)
