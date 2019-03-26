@@ -91,8 +91,8 @@ class pix2pix(object):
             self.real_B_256 = tf.image.resize_images(self.real_B_128, (size*2, size*2))
 
         self.fake_B_64, d6 = self.generator_128_to_64(self.real_A_128)
-        self.fake_B_128, d128 = self.generator_64_to_128(self.real_A_256, d6)
-        self.fake_B_256 = self.generator_128_to_256(self.real_A_256, d128)
+        self.fake_B_128, d128 = self.generator_64_to_128(self.real_A_128, d6)
+        self.fake_B_256 = self.generator_128_to_256(self.real_A_128, d128)
 
         self.fake_B_sample_256 = self.sampler_256(self.real_A_128, d6, d128)
         self.fake_B_sample_128, _ = self.sampler_128(self.real_A_128, d6)
@@ -325,7 +325,7 @@ class pix2pix(object):
         self.d128, self.d128_w, self.d128_b = deconv2d(tf.nn.relu(rb2),
             [self.batch_size, s2, s2, self.gf_dim], name='g_d7_128', with_w=True)
         d128 = self.g_bn_d7_128(self.d128)
-        e128 = conv2d(image, self.gf_dim, name='g_e128_conv')
+        e128 = conv2d(image, self.gf_dim, d_h=1, d_w=1, name='g_e128_conv')
         d128 = tf.concat([d128, e128], 3)
         # d128 is (128 x 128 x self.gf_dim*2*2)
 
@@ -344,9 +344,10 @@ class pix2pix(object):
         rb2 = self.residual_block(rb1, size=s, type=2)
 
         self.d256, self.d256_w, self.d256_b = deconv2d(tf.nn.relu(rb2),
-            [self.batch_size, s, s, self.gf_dim*2], name='g_d8_128', with_w=True)
+            [self.batch_size, s, s, self.gf_dim], name='g_d8_128', with_w=True)
         d256 = self.g_bn_d8_256(self.d256)
-        d256 = tf.concat([d256, image], 3)
+        e256 = conv2d(image, self.gf_dim, d_h=1, d_w=1, name='g_e256_conv')
+        d256 = tf.concat([d256, e256], 3)
         # d256 is (256 x 256 x self.gf_dim*2*2)
 
         out_256, _, _ = deconv2d(tf.nn.relu(d256),
