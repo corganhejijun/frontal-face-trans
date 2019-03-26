@@ -429,18 +429,14 @@ class pix2pix(object):
             return self.g_128_to_64(image)
 
     def sampler_128(self, image, d6, y=None):
-        out_64, _ = self.sampler_64(image)
-
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
-            return self.g_64_to_128(out_64, d6)
+            return self.g_64_to_128(image, d6)
             
     def sampler_256(self, image, d6, d128, y=None):
-        out_128, _ = self.sampler_128(image, d6)
-
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
-            return self.g_128_to_256(out_128, d128)
+            return self.g_128_to_256(image, d128)
             
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
