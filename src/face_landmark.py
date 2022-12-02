@@ -9,11 +9,18 @@ def getStandardFace(front_face, detector, shapePredict):
     img = cv2.cvtColor(cv2.imread(front_face), cv2.COLOR_BGR2RGB)
     dets = detector(img, 1)
     shape = shapePredict(img, dets[0])
+    return getFaceLandmarkList(shape)
+
+def getFaceLandmarkList(shape):
     landmarkList = np.zeros((shape.num_parts, 2))
     noseCenter = shape.part(NOSE_CENTER_NUMBER)
     for i in range(shape.num_parts):
         landmarkList[i] = [shape.part(i).x - noseCenter.x, shape.part(i).y - noseCenter.y]
     return landmarkList
+
+def getNoseCenter(shape):
+    noseCenter = shape.part(NOSE_CENTER_NUMBER)
+    return [noseCenter.x, noseCenter.y]
 
 def getFaceDis(img, detector, shapePredict, path):
     dets = detector(img, 1)
